@@ -18,7 +18,6 @@
       </el-col>
     </el-row>
     <!-- 主页左右布局 -->
-
     <el-row>
       <el-col :span="leftColumnSpan" class="Left">
         <!-- 文件列表表格 -->
@@ -32,12 +31,14 @@
             <template #default="scope">
               <!-- 下载按钮 -->
               <el-button link type="primary" size="small" @click="handleDownload(scope.row)">下载</el-button>
+              <!-- 详细信息 -->
+              <el-button link type="info" size="small" @click="handleAbout(scope.row)">详细</el-button>
               <!-- 删除按钮 -->
-              <el-button link type="danger" size="small" @click="handleDelete(scope.row)">删除</el-button>
+              <!-- TODO: 管理员权限 -->
+              <!-- <el-button link type="danger" size="small" @click="handleDelete(scope.row)" >删除</el-button> -->
             </template>
           </el-table-column>
         </el-table>
-
         <!-- 分页 -->
         <div class="LeftAndRightContainer">
           <el-pagination
@@ -59,6 +60,7 @@
 <script setup lang="ts">
 import {ref, onMounted, watch, computed} from 'vue';
 import {useWindowSize} from '@vueuse/core';
+import {Table} from "element-plus";
 
 // 左侧栏宽度变量
 const leftColumnSpan = ref(18);
@@ -67,58 +69,25 @@ const rightColumnSpan = ref(6);
 const {width} = useWindowSize();
 const searchInput = ref('');
 // 原始文件列表数据
-const originalTableData = [
-  {'id': 1, 'fileName': '文件名称Test_1', 'format': 'ttf', 'fileSize': '10001kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 2, 'fileName': '文件名称Test_2', 'format': 'ttf', 'fileSize': '10002kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 3, 'fileName': '文件名称Test_3', 'format': 'ttf', 'fileSize': '10003kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 4, 'fileName': '文件名称Test_4', 'format': 'ttf', 'fileSize': '10004kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 5, 'fileName': '文件名称Test_5', 'format': 'ttf', 'fileSize': '10005kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 6, 'fileName': '文件名称Test_6', 'format': 'ttf', 'fileSize': '10006kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 7, 'fileName': '文件名称Test_7', 'format': 'ttf', 'fileSize': '10007kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 8, 'fileName': '文件名称Test_8', 'format': 'ttf', 'fileSize': '10008kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 9, 'fileName': '文件名称Test_9', 'format': 'ttf', 'fileSize': '10009kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 10, 'fileName': '文件名称Test_10', 'format': 'ttf', 'fileSize': '10010kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 11, 'fileName': '文件名称Test_11', 'format': 'ttf', 'fileSize': '10011kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 12, 'fileName': '文件名称Test_12', 'format': 'ttf', 'fileSize': '10012kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 13, 'fileName': '文件名称Test_13', 'format': 'ttf', 'fileSize': '10013kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 14, 'fileName': '文件名称Test_14', 'format': 'ttf', 'fileSize': '10014kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 15, 'fileName': '文件名称Test_15', 'format': 'ttf', 'fileSize': '10015kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 16, 'fileName': '文件名称Test_16', 'format': 'ttf', 'fileSize': '10016kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 17, 'fileName': '文件名称Test_17', 'format': 'ttf', 'fileSize': '10017kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 18, 'fileName': '文件名称Test_18', 'format': 'ttf', 'fileSize': '10018kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 19, 'fileName': '文件名称Test_19', 'format': 'ttf', 'fileSize': '10019kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 20, 'fileName': '文件名称Test_20', 'format': 'ttf', 'fileSize': '10020kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 21, 'fileName': '文件名称Test_1', 'format': 'ttf', 'fileSize': '10001kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 22, 'fileName': '文件名称Test_2', 'format': 'ttf', 'fileSize': '10002kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 23, 'fileName': '文件名称Test_3', 'format': 'ttf', 'fileSize': '10003kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 24, 'fileName': '文件名称Test_4', 'format': 'ttf', 'fileSize': '10004kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 25, 'fileName': '文件名称Test_5', 'format': 'ttf', 'fileSize': '10005kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 26, 'fileName': '文件名称Test_6', 'format': 'ttf', 'fileSize': '10006kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 27, 'fileName': '文件名称Test_7', 'format': 'ttf', 'fileSize': '10007kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 28, 'fileName': '文件名称Test_8', 'format': 'ttf', 'fileSize': '10008kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 29, 'fileName': '文件名称Test_9', 'format': 'ttf', 'fileSize': '10009kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 30, 'fileName': '文件名称Test_10', 'format': 'ttf', 'fileSize': '10010kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 31, 'fileName': '文件名称Test_11', 'format': 'ttf', 'fileSize': '10011kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 32, 'fileName': '文件名称Test_12', 'format': 'ttf', 'fileSize': '10012kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 33, 'fileName': '文件名称Test_13', 'format': 'ttf', 'fileSize': '10013kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 34, 'fileName': '文件名称Test_14', 'format': 'ttf', 'fileSize': '10014kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 35, 'fileName': '文件名称Test_15', 'format': 'ttf', 'fileSize': '10015kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 36, 'fileName': '文件名称Test_16', 'format': 'ttf', 'fileSize': '10016kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 37, 'fileName': '文件名称Test_17', 'format': 'ttf', 'fileSize': '10017kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 38, 'fileName': '文件名称Test_18', 'format': 'ttf', 'fileSize': '10018kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 39, 'fileName': '文件名称Test_19', 'format': 'ttf', 'fileSize': '10019kb', 'uploader': 'MoYiJiangNan'},
-  {'id': 40, 'fileName': '文件名称Test_20', 'format': 'ttf', 'fileSize': '10020kb', 'uploader': 'MoYiJiangNan'},
-  // ... 添加其他文件数据
-];
-
+const originalTableData: TableRow[] = [];
+const randomDataRowCount = 1000;
+const userName = "MoYiJiangNan";
+for (let i = 1; i < randomDataRowCount; i++) {
+  originalTableData.push({
+    id: i,
+    fileName: "测试文件" + i,
+    format: 'ttf',
+    fileSize: (Math.random() * 1023).toFixed(0) + "kb",
+    uploader: "MoYiJiangNan"
+  });
+}
 // 文件列表数据
 const tableData = ref(originalTableData);
 // 定义分页相关变量
 const pageSize = ref(15);
-const pagerCount = ref(6);
+const pagerCount = ref(7);
 const totalItems = ref(tableData.value.length);
 const currentPage = ref(1);
-
 // 计算分页后的文件列表数据
 const pagedTableData = computed(() => {
   const startIndex = (currentPage.value - 1) * pageSize.value;
@@ -130,7 +99,6 @@ const pagedTableData = computed(() => {
 const handlePageChange = (page: number) => {
   currentPage.value = page;
 };
-
 // 搜索功能
 const handleSearch = () => {
   const query = searchInput.value.trim().toLowerCase();
@@ -146,7 +114,6 @@ const handleSearch = () => {
   currentPage.value = 1; // 重置当前页为第一页
   totalItems.value = tableData.value.length; // 更新 totalItems
 };
-
 // 更新左侧栏宽度函数
 const updateLeftColumnSpan = () => {
   if (width.value <= 768) {
@@ -160,15 +127,32 @@ const updateLeftColumnSpan = () => {
 onMounted(updateLeftColumnSpan);
 watch(width, updateLeftColumnSpan);
 
+// 为您的表格中的row定义一个接口类型
+interface TableRow {
+  id: number;
+  fileName: string;
+  format: string;
+  fileSize: string;
+  uploader: string;
+}
+
 // 点击下载按钮的处理函数
-const handleDownload = () => {
-  console.log('点击下载按钮');
+const handleDownload = (row: TableRow) => {
+  console.log('点击下载按钮', row);
+  alert('下载功能暂未实现' + row.id);
+};
+
+// 详细信息
+const handleAbout = (row: TableRow) => {
+  console.log('点击详细信息按钮', row);
+  alert('详细信息功能暂未实现' + row.id);
 };
 
 // 点击删除按钮的处理函数
-const handleDelete = () => {
-  console.log('点击删除按钮');
-};
+// const handleDelete = (row: TableRow) => {
+//   console.log('点击删除按钮', row);
+//   alert('删除功能暂未实现' + row.id);
+// };
 </script>
 
 <style scoped>
@@ -224,9 +208,5 @@ const handleDelete = () => {
   float: left;
   margin: 0 0 0 5px;
   width: 80%;
-}
-
-.el-table .el-table__body tr {
-  height: 10px; /* 修改行高为40px，根据需求调整 */
 }
 </style>

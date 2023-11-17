@@ -10,9 +10,11 @@
   },
   "dependencies": {
     "element-plus": "^2.4.2",
+    "fs": "^0.0.1-security",
     "vue": "^3.3.4"
   },
   "devDependencies": {
+    "@types/node": "^20.9.1",
     "@vitejs/plugin-vue": "^4.2.3",
     "typescript": "^5.0.2",
     "vite": "^4.4.5",

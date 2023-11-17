@@ -1,0 +1,13 @@
+.el-table .cell {
+    box-sizing: border-box;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+    word-break: break-all;
+    /* 行高 */
+    line-height: 23px;
+    padding: 0 0;
+    /* 字体大小 */
+    font-size: 13px;
+    margin-left: 15px;
+}
