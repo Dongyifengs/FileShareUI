@@ -16,7 +16,7 @@
           <!-- 用户头像 -->
           <el-avatar class="Avatar" shape="square" :size="35" @click="showPopup">头像</el-avatar>
           <!-- 用户登录弹出框 -->
-          <van-popup v-model:show='show' round position="bottom" :style="{ height: '30%' }">
+          <van-popup v-model:show='show' round position="top" :style="{ height: '30%' }">
             <div class="HomeHeadUserLogin">
               <h4>账号:</h4>
               <!-- 用户名输入框 -->
@@ -52,6 +52,14 @@
             </template>
           </el-table-column>
         </el-table>
+        <van-popup v-model:show="showAbout" round position="bottom" :style="{ height: '30%' }">
+          <div class="BoxFileAbout">
+            <h4>文件名: {{ selectedRow ? selectedRow.fileName : '' }}</h4>
+            <h4>文件格式: {{ selectedRow ? selectedRow.format : '' }}</h4>
+            <h4>文件大小: {{ selectedRow ? selectedRow.fileSize : '' }}</h4>
+            <h4>上传者: {{ selectedRow ? selectedRow.uploader : '' }}</h4>
+          </div>
+        </van-popup>
         <!-- 分页 -->
         <div class="LeftAndRightContainer">
           <el-pagination
@@ -89,7 +97,9 @@ for (let i = 1; i < randomDataRowCount; i++) {
     fileName: "测试文件" + i,
     format: 'ttf',
     fileSize: (Math.random() * 1023).toFixed(0) + "kb",
-    uploader: "MoYiJiangNan"
+    uploader: "MoYiJiangNan",
+    md5: (Math.random() * 1000) + "md5test",
+    uploadTime: "2023年" + Math.floor(Math.random() * 12) + "月" + Math.floor(Math.random() * 30) + "日" + Math.floor(Math.random() * 24) + "时" + Math.floor(Math.random() * 60) + "分" + Math.floor(Math.random() * 60) + "秒"
   });
 }
 // 文件列表数据
@@ -147,6 +157,8 @@ interface TableRow {
   format: string;
   fileSize: string;
   uploader: string;
+  md5: string;
+  uploadTime: string;
 }
 
 // 点击下载按钮的处理函数
@@ -156,10 +168,14 @@ const handleDownload = (row: TableRow) => {
 };
 
 // 详细信息
+const showAbout = ref<boolean>(false);
+const selectedRow = ref<TableRow | null>(null); // 保存要显示的属性值// 详细信息弹出框显示状态的响应式变量
 const handleAbout = (row: TableRow) => {
   console.log('点击详细信息按钮', row);
-  alert('详细信息功能暂未实现' + row.id);
+  selectedRow.value = row; // 将点击的行数据赋给selectedRow
+  showAbout.value = true;
 };
+
 
 const userLogin = () => {
   console.log(username.value, userPassword.value);
@@ -243,5 +259,9 @@ const showPopup = () => {
 .UserLoginButton {
   width: 80%; /* 宽度占80% */
   margin: 20px; /* 外边距，上下均为20px */
+}
+
+.BoxFileAbout {
+  margin: 30px;
 }
 </style>
