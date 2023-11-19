@@ -1,3 +1,3 @@
 export enum Auth {
-    user,admin
+    user, admin
 }

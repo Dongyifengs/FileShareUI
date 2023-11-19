@@ -3,16 +3,19 @@ import {md5Hex} from "./CryptoUtils";
 import {User} from "../entities/User.ts";
 
 export const baseUrl = 'http://localhost:8081';
+
 export interface Result<T> {
     data: T;
     message: string;
     status: number;
     timestamp: number
 }
+
 export interface Page<T> {
     data: T[];
     total: number;
 }
+
 export type PageResult<T> = Result<Page<T>>
 const instance = axios.create({
     baseURL: baseUrl,
@@ -30,7 +33,7 @@ axios.interceptors.request.use(function (config) {
 // 添加响应拦截器
 axios.interceptors.response.use(function (response) {
     const authorization = response.headers['Set-Authorization'];
-    if (authorization){
+    if (authorization) {
         window.sessionStorage.setItem("authorization", authorization);
     }
     return response;
