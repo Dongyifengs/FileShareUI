@@ -1,4 +1,6 @@
 import axios from 'axios'
+import {UploadRequestOptions} from "element-plus"
+import {UploadProgressEvent} from "element-plus/es/components/upload/src/upload";
 import {md5Hex} from "./CryptoUtils";
 import {User} from "../entities/User";
 import {Auth} from "../entities/Auth";
@@ -57,6 +59,26 @@ export const register = (username: string, password: string, auth: Auth, verifyC
     })
 }
 
+// 获取文件
 export const getAllFiles = (page: number, num: number) => {
     return instance.get<PageResult<File>>("/api/file/getAll", {params: {num, page}});
+}
+
+// 上传文件
+export const upload = (options: UploadRequestOptions, controller: AbortController) => {
+    const param = new FormData();
+    param.append("file", options.file);
+    return instance.post("/api/file/upload", param, {
+        headers: {
+            "Content-Type": "multipart/form-data"
+        },
+        timeout: 0,
+        onUploadProgress: (evt) => {
+            const progressEvent: ProgressEvent = evt.event as ProgressEvent;
+            const uploadEvent: UploadProgressEvent = progressEvent as UploadProgressEvent;
+            uploadEvent.percent = (evt.progress as number) * 100;
+            options.onProgress(uploadEvent);
+        },
+        signal: controller.signal
+    })
 }
