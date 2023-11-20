@@ -1,6 +1,7 @@
 import axios from 'axios'
 import {md5Hex} from "./CryptoUtils";
 import {User} from "../entities/User.ts";
+import {Auth} from "../entities/Auth.ts";
 
 export const baseUrl = 'http://localhost:8081';
 
@@ -44,5 +45,13 @@ export const login = (username: string, password: string) => {
     return instance.post<Result<User>>("/api/user/login", {
         name: username,
         password: md5Hex(password)
+    })
+}
+export const register = (username: string, password: string, auth: Auth, verifyCode?: string) => {
+    return instance.post<Result<User>>("/api/user/register", {
+        name: username,
+        password: md5Hex(password),
+        auth: auth,
+        verifyCode: verifyCode,
     })
 }
