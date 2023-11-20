@@ -30,6 +30,7 @@
         <!-- 登录弹窗 -->
         <div class="login-content">
           <h2>登录/注册</h2>
+          <el-button link type="primary" size="small" @click="fetchFiles">获取文件列表 - 测试</el-button>
           <p>欢迎来到文件分享站</p>
           <label for="username">用户名</label>
           <van-field id="username" v-model="UserName" center placeholder="请输入用户名"/>
@@ -47,7 +48,7 @@
       </van-popup>
     </div>
     <div class="FileLiteBox">
-      <el-table :data="TableDataFile" border style="width: 100%">
+      <el-table :data="currentData" border style="width: 100%">
         <el-table-column prop="id" label="ID" width="40"/>
         <el-table-column prop="name" label="文件名" width="200"/>
         <el-table-column prop="type" label="文件格式" width="180"/>
@@ -55,34 +56,39 @@
         <el-table-column prop="uploaderName" label="上传者" width="100"/>
         <el-table-column fixed="right" label="操作" width="100">
           <template #default="scope">
+            <!-- 列表操作按钮 -->
             <el-button link type="primary" size="small" @click="handleShowDetail();">
-              <!-- scope.row.id, scope.row.fileName  是handleShowDetail的传参 -->
+              <!-- 显示详细信息按钮 -->
               详细
             </el-button>
             <el-button link type="primary" size="small" @click="handleDownload();">下载</el-button>
+            <!-- 下载按钮 -->
             <el-button link type="primary" size="small" @click="handleDelete();" v-if="isAdmin">删除
-              <!-- scope.row.id  是handleDelete和handleDownload的传参  -->
+              <!-- 删除按钮，仅管理员可见 -->
             </el-button>
           </template>
         </el-table-column>
       </el-table>
-      <el-pagination
-          background
-          layout="prev, pager, next"
-          :total="total"
-          v-model:current-page="currentPage"
-          :page-size="pageSize"
-          @update:current-page="handleCurrentChange"
-      />
+      <div class="pagination-container">
+        <!-- 分页控件容器 -->
+        <el-pagination
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+            :current-page="currentPage"
+            :page-size="pageSize"
+            :total="totalItems"
+            layout="prev, pager, next">
+        </el-pagination>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import {ref} from "vue";
+import {ref, computed} from "vue";
 import {ElMessage} from "element-plus";
-import 'element-plus/es/components/message/style/css'
-import {login, register, Result} from '../api/Requester'
+import 'element-plus/es/components/message/style/css';
+import {login, register, Result, getAllFiles} from '../api/Requester';
 import {User} from "../entities/User.ts";
 import {AxiosResponse} from "axios";
 import {Auth} from "../entities/Auth.ts";
@@ -91,11 +97,10 @@ const InputFileName = ref('');
 const UserAvatarLoginShow = ref(false);
 const UserName = ref();
 const UserPassword = ref();
-const currentPage = ref(1); // 当前页码
-const pageSize = ref(5); // 每页显示的记录数
-const total = ref(99999); // 总记录数，这里可以根据你的需求动态获取
 const isAdmin = ref(false); // 是否是管理员
-
+// 分页
+const currentPage = ref(1);
+const pageSize = ref(5);
 const TableDataFile = [
   {
     "downloadCount": 0,
@@ -198,11 +203,29 @@ const TableDataFile = [
     "uploaderName": "wzp"
   }
 ]
-const handleCurrentChange = (newPage: number) => {
-  currentPage.value = newPage;
-  // 此处添加获取数据的逻辑，例如调用 API
-};
+const totalItems = ref(TableDataFile.length);
 
+const fetchFiles = () => {
+  const currentPage = ref(1);
+  const pageSize = ref(15); // 设置每页数据量为15
+  // res.data.data.date.length 长度
+  // res.data.data.date[x] 文件,从0开始
+  // res.data.data.date[0].downloadCount 下载次数
+  // res.data.data.date[0].hash 文件hash
+  // res.data.data.date[0].id 文件id
+  // res.data.data.date[0].name 文件名
+  // res.data.data.date[0].size 文件大小
+  // res.data.data.date[0].type 文件类型
+  // res.data.data.date[0].uploadTime 上传时间
+  // res.data.data.data[0].uploaderName 上传者
+  // res.data.data.total 总文件
+  // res.data.message 返回消息
+  // res.data.status 状态码
+  // res.data.timestamp 访问时间
+  getAllFiles(currentPage.value, pageSize.value).then((res) => {
+    console.log(res.data);
+  })
+};
 
 const toggleUserLogin = () => {
   UserAvatarLoginShow.value = !UserAvatarLoginShow.value;
@@ -235,7 +258,7 @@ const UserEnroll = () => {
     return;
   }
   register(UserName.value, UserPassword.value, Auth.user).then((res) => {
-    switch (res.data.status){
+    switch (res.data.status) {
       case 251:
         ElMessage.error("邀请码错误！");
         break;
@@ -244,7 +267,8 @@ const UserEnroll = () => {
         break;
       default:
         ElMessage.error("无法注册！");
-    }});
+    }
+  });
 }
 
 const handleShowDetail = () => {
@@ -258,6 +282,20 @@ const handleDownload = () => {
 const handleDelete = () => {
   console.log("delete");
 }
+
+const currentData = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value;
+  const end = start + pageSize.value;
+  return TableDataFile.slice(start, end);
+});
+const handleCurrentChange = (val: number) => {
+  currentPage.value = val;
+};
+
+const handleSizeChange = (val: number) => {
+  pageSize.value = val;
+};
+
 </script>
 
 <style scoped>
@@ -265,14 +303,12 @@ const handleDelete = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #f0f0f0;
-  /* 头部样式，包括布局和背景颜色 */
+  background-color: #f0f0f0; /* 头部样式，包括布局和背景颜色 */
 }
 
 .InputFileName {
   flex: 1;
-  margin-right: 10px;
-  /* 搜索框样式 */
+  margin-right: 10px; /* 搜索框样式 */
 }
 
 .UserAvatar {
@@ -286,8 +322,7 @@ const handleDelete = () => {
 .UserLoginBox {
   background-color: #fff;
   border-radius: 10px;
-  padding: 20px;
-  /* 登录弹窗样式 */
+  padding: 20px; /* 登录弹窗样式 */
 }
 
 .login-content h2 {
@@ -300,23 +335,29 @@ const handleDelete = () => {
 
 .login-content label {
   display: block;
-  margin-bottom: 5px;
-  /* 登录弹窗内部文本样式 */
+  margin-bottom: 5px; /* 登录弹窗内部文本样式 */
 }
 
 .actions {
   display: flex;
   justify-content: space-around;
-  margin-top: 20px;
-  /* 按钮区域样式 */
+  margin-top: 20px; /* 按钮区域样式 */
 }
 
 .UserLoginButton {
-  width: 120px;
-  /* 登录注册按钮样式 */
+  width: 120px; /* 登录注册按钮样式 */
 }
 
 .FileLiteBox {
+  margin-top: 10px;
+}
+
+.pagination-container {
+  display: flex; /* 使用Flex布局 */
+  flex-direction: column; /* 垂直方向排列子元素 */
+  justify-content: center; /* 水平居中对齐 */
+  align-items: center; /* 垂直居中对齐 */
+  text-align: center; /* 文本水平居中对齐 */
   margin-top: 10px;
 }
 </style>

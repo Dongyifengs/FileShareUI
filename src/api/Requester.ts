@@ -2,8 +2,9 @@ import axios from 'axios'
 import {md5Hex} from "./CryptoUtils";
 import {User} from "../entities/User.ts";
 import {Auth} from "../entities/Auth.ts";
+import {UnwrapRef} from "vue";
 
-export const baseUrl = 'http://localhost:8081';
+export const baseUrl = 'https://localhost:8081';
 
 export interface Result<T> {
     data: T;
@@ -15,6 +16,11 @@ export interface Result<T> {
 export interface Page<T> {
     data: T[];
     total: number;
+}
+
+export interface File {
+    page: number;
+    num: number;
 }
 
 export type PageResult<T> = Result<Page<T>>
@@ -54,4 +60,8 @@ export const register = (username: string, password: string, auth: Auth, verifyC
         auth: auth,
         verifyCode: verifyCode,
     })
+}
+
+export const getAllFiles = (page: UnwrapRef<number>, num: UnwrapRef<number>) => {
+    return instance.get<PageResult<File>>(`/api/file/getAll?page=${page}&num=${num}`);
 }
