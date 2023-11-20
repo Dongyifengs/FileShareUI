@@ -14,19 +14,17 @@
         </van-field>
       </van-cell-group>
 
-      <van-image class="userAvatar"
-                 width="50"
-                 height="50"
-                 src="src/assets/UserAvatar.jpg"
-                 radius="5"
-                 @click="toggleUserLogin"/>
+      <van-image
+          class="userAvatar"
+          width="50"
+          height="50"
+          src="src/assets/UserAvatar.jpg"
+          radius="5"
+          @click="toggleUserLogin"
+      />
       <!-- 用户头像 -->
 
-      <van-popup
-          v-model:show="userAvatarLoginShow"
-          round
-          position="top"
-          class="userLoginBox">
+      <van-popup v-model:show="userAvatarLoginShow" round position="top" class="userLoginBox">
         <!-- 登录弹窗 -->
         <div class="login-content">
           <h2>登录/注册</h2>
@@ -40,8 +38,47 @@
           <div class="actions">
             <van-button class="userLoginButton" @click="userLogin" type="primary">登录</van-button>
             <!-- 登录按钮 -->
-            <van-button class="userLoginButton" @click="userEnroll" type="primary">注册</van-button>
+            <van-button class="userLoginButton" @click="userEnroll" type="primary">注册后登录</van-button>
             <!-- 注册按钮 -->
+          </div>
+        </div>
+      </van-popup>
+
+      <van-popup v-model:show="userAvatarLoginShowTools" round position="top" class="userLoginBox">
+        <!-- 登录弹窗 -->
+        <div class="login-content">
+          <h2>个人中心</h2>
+          <h3>用户属性:</h3>
+          <div>
+            <p class="userNameId">用户ID: {{ userNameToolsId }} </p>
+            <p class="userNameName">用户名称: {{ userNameToolsName }}</p>
+            <p class="userNameType">用户类型:
+              <span v-if="userNameToolsAuth === 'admin'">管理员</span>
+              <span v-else-if="userNameToolsAuth === 'user'">普通用户</span>
+              <span v-else>未登录</span>
+            </p>
+          </div>
+          <h3>功能区:</h3>
+          <div class="uploadFile">
+            <el-upload
+                v-model:file-list="fileList"
+                class="upload"
+                action="http://127.0.0.1:8081/api/file/upload"
+                multiple
+                :on-preview="handlePreview"
+                :on-remove="handleRemove"
+                :before-remove="beforeRemove"
+                :limit="3"
+                :on-exceed="handleExceed"
+            >
+              <el-button type="primary">点击上传文件</el-button>
+              <el-button type="primary" @click="logout">退出登录</el-button>
+              <template #tip>
+                <div class="el-upload__tip">
+                  最大文件限制大小:10GB
+                </div>
+              </template>
+            </el-upload>
           </div>
         </div>
       </van-popup>
@@ -50,7 +87,7 @@
       <el-table :data="nowFileData" border style="width: 100%">
         <el-table-column prop="id" label="ID" width="60"/>
         <el-table-column prop="name" label="文件名" width="200"/>
-        <el-table-column prop="type" label="文件格式" width="180"/>
+        <el-table-column prop="type" label="文件格式" width="150"/>
         <el-table-column prop="size" label="文件大小" width="100"/>
         <el-table-column prop="uploaderName" label="上传者" width="100"/>
         <el-table-column fixed="right" label="操作" width="100">
@@ -95,9 +132,15 @@ import {File} from "../entities/File";
 // TODO: 头部组件定义变量
 const inputFileName = ref<string>('');
 const userAvatarLoginShow = ref<boolean>(false);
+const userAvatarLoginShowTools = ref<boolean>(false);
 const userName = ref<string>("");
 const userPassword = ref<string>("");
 const isAdmin = ref<boolean>(false); // 是否是管理员
+
+// TODO: 用户属性
+const userNameToolsId = ref<number>(0);
+const userNameToolsName = ref<string>("未登录");
+const userNameToolsAuth = ref<string>("未登录");
 
 // TODO: 分页属性配置
 const currentPage = ref<number>(1);
@@ -107,28 +150,141 @@ const totalFiles = ref<number>(0);
 
 // TODO: 用户登录弹窗
 const toggleUserLogin = () => {
-  userAvatarLoginShow.value = !userAvatarLoginShow.value;
-  // 切换用户登录弹窗的显示状态
+  if (sessionStorage.getItem("userInfo") || localStorage.getItem("userInfo")) {
+    // 如果本地存储中有用户信息，即用户已登录
+    // 显示用户信息窗口并隐藏登录窗口
+    userAvatarLoginShowTools.value = true;
+    userAvatarLoginShow.value = false;
+  } else {
+    // 如果用户未登录，切换登录窗口的显示状态
+    userAvatarLoginShow.value = !userAvatarLoginShow.value;
+    userAvatarLoginShowTools.value = false;
+  }
+};
+
+
+// TODO: 用户配置
+const logout = () => {
+  // 清除本地存储中的用户信息
+  localStorage.removeItem("userInfo");
+  sessionStorage.removeItem("userInfo");
+
+  // 刷新页面
+  window.location.reload();
 };
 
 // TODO: 用户登录接口
 const userLogin = () => {
+  // 清理本地cookie
+  localStorage.removeItem("userInfo");
+  sessionStorage.removeItem("userInfo");
+
   // 用户登录函数
   if (userName.value == "" || userPassword.value == "") {
     ElMessage.error("用户名密码不能为空");
+    localStorage.removeItem("userInfo");
+    sessionStorage.removeItem("userInfo");
     return;
   }
-  login(userName.value, userPassword.value).then((res: AxiosResponse<Result<User>>) => {
-    // 发送登录请求
-    if (res.data.status == 200) {
-      ElMessage.success("登录成功!")
-      toggleUserLogin(); // Close the login popup
-    } else {
-      ElMessage.error("登录失败,用户名密码错误!")
-    }
-  }).catch(() => {
-    ElMessage.error("登录失败,用户名密码错误!")
-  })
+  login(userName.value, userPassword.value)
+      .then((res: AxiosResponse<Result<User>>) => {
+        // 发送登录请求
+        if (res.data.status == 200) {
+          // 登录成功
+          // 存储用户信息到sessionStorage
+          const userInfo = {
+            userName: userName.value,
+            userPassword: userPassword.value,
+          };
+          sessionStorage.setItem("userInfo", JSON.stringify(userInfo));
+          console.log(res.data.data.name, res.data.data.id, res.data.data.auth);
+          userNameToolsId.value = Number(res.data.data.id);
+          userNameToolsName.value = String(res.data.data.name);
+          userNameToolsAuth.value = String(res.data.data.auth)
+          // 延迟一段时间后显示用户信息窗口
+          setTimeout(() => {
+            toggleUserLogin();
+          }, 1000); // 1000毫秒（1秒）延迟示例
+
+          ElMessage.success("登录成功!");
+        } else {
+          ElMessage.error("登录失败,用户名密码错误!");
+          localStorage.removeItem("userInfo");
+          sessionStorage.removeItem("userInfo");
+        }
+      })
+      .catch(() => {
+        ElMessage.error("登录失败,用户名密码错误!");
+        localStorage.removeItem("userInfo");
+        sessionStorage.removeItem("userInfo");
+      });
+};
+
+
+// 在页面加载时检查本地存储中的用户信息
+let checkedStorage = false;
+const checkLocalStorageUserInfo = () => {
+  if (checkedStorage) {
+    return; // 如果已经检查过，不再重复执行
+  }
+  const userInfoString = localStorage.getItem("userInfo");
+  if (userInfoString) {
+    // 解析用户信息
+    const userInfo = JSON.parse(userInfoString);
+    userName.value = userInfo.userName;
+    userPassword.value = userInfo.userPassword;
+
+    // 验证用户信息
+    verifyUserInfo();
+  }
+};
+// 在页面加载时检查sessionStorage中的用户信息
+const checkSessionStorageUserInfo = () => {
+  if (checkedStorage) {
+    return; // 如果已经检查过，不再重复执行
+  }
+  const userInfoString = sessionStorage.getItem("userInfo");
+  if (userInfoString) {
+    // 解析用户信息
+    const userInfo = JSON.parse(userInfoString);
+    userName.value = userInfo.userName;
+    userPassword.value = userInfo.userPassword;
+
+    // 验证用户信息
+    verifyUserInfo();
+  }
+};
+// 验证用户信息
+const verifyUserInfo = () => {
+  if (userName.value === "" || userPassword.value === "") {
+    return; // 用户名或密码为空，不进行验证
+  }
+
+  login(userName.value, userPassword.value)
+      .then((res: AxiosResponse<Result<User>>) => {
+        if (res.data.status === 200) {
+          console.log(res.data.data.name, res.data.data.id, res.data.data.auth);
+          userNameToolsId.value = Number(res.data.data.id);
+          userNameToolsName.value = String(res.data.data.name);
+          userNameToolsAuth.value = String(res.data.data.auth)
+          ElMessage.success("登录成功!");
+          userAvatarLoginShowTools.value = true; // 验证成功，显示用户信息窗口
+          userAvatarLoginShow.value = false; // 隐藏登录窗口
+        } else {
+          ElMessage.error("验证失败，请重新登录!");
+          userAvatarLoginShowTools.value = false; // 验证失败，隐藏用户信息窗口
+          userAvatarLoginShow.value = true; // 显示登录窗口
+          localStorage.removeItem("userInfo");
+          sessionStorage.removeItem("userInfo");
+        }
+      })
+      .catch(() => {
+        ElMessage.error("验证失败，请重新登录!");
+        userAvatarLoginShowTools.value = false; // 验证失败，隐藏用户信息窗口
+        userAvatarLoginShow.value = true; // 显示登录窗口
+        localStorage.removeItem("userInfo");
+        sessionStorage.removeItem("userInfo");
+      });
 };
 
 // TODO: 用户注册接口
@@ -146,6 +302,34 @@ const userEnroll = () => {
       case 501:
         ElMessage.error("存在同名用户！");
         break;
+      case 200:
+        ElMessage.success("注册成功");
+        login(userName.value, userPassword.value)
+            .then((res: AxiosResponse<Result<User>>) => {
+              if (res.data.status === 200) {
+                console.log(res.data.data.name, res.data.data.id, res.data.data.auth);
+                userNameToolsId.value = Number(res.data.data.id);
+                userNameToolsName.value = String(res.data.data.name);
+                userNameToolsAuth.value = String(res.data.data.auth)
+                ElMessage.success("登录成功!");
+                userAvatarLoginShowTools.value = true; // 验证成功，显示用户信息窗口
+                userAvatarLoginShow.value = false; // 隐藏登录窗口
+              } else {
+                ElMessage.error("验证失败，请重新登录!");
+                userAvatarLoginShowTools.value = false; // 验证失败，隐藏用户信息窗口
+                userAvatarLoginShow.value = true; // 显示登录窗口
+                localStorage.removeItem("userInfo");
+                sessionStorage.removeItem("userInfo");
+              }
+            })
+            .catch(() => {
+              ElMessage.error("验证失败，请重新登录!");
+              userAvatarLoginShowTools.value = false; // 验证失败，隐藏用户信息窗口
+              userAvatarLoginShow.value = true; // 显示登录窗口
+              localStorage.removeItem("userInfo");
+              sessionStorage.removeItem("userInfo");
+            });
+        break;
       default:
         ElMessage.error("无法注册！");
     }
@@ -162,6 +346,8 @@ const fetchFiles = (current?: number) => {
     totalFiles.value = res.data.data.total;
   })
 }
+
+// TODO: 上传文件
 
 // TODO: 查看文件属性
 const handleShowDetail = () => {
@@ -181,6 +367,9 @@ const handleDelete = () => {
 // TODO: 实时更新
 onMounted(() => {
   fetchFiles();
+  checkSessionStorageUserInfo();
+  checkLocalStorageUserInfo();
+  checkedStorage = true;
 })
 </script>
 
