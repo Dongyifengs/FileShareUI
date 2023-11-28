@@ -48,10 +48,11 @@
             <el-table-column prop="LeftFileListDataFormat" label="文件格式" width="150"/>
             <el-table-column prop="LeftFileListDataSize" label="文件大小" width="160"/>
             <el-table-column prop="LeftFileListDataUpLoader" label="上传者" width="150"/>
-            <el-table-column prop="LeftFileListDataOption" fixed="right" label="操作" width="150">
+            <el-table-column prop="LeftFileListDataOption" fixed="right" label="操作" width="155">
               <!-- 操作列模板 -->
               <template #default>
                 <el-button link type="primary">下载</el-button>
+                <el-button link type="primary">详情</el-button>
                 <el-button link type="danger">删除</el-button>
               </template>
             </el-table-column>
@@ -69,14 +70,36 @@
         </div>
       </el-col>
       <!-- 右侧 -->
-      <el-col :span="7" class="Right"></el-col>
+      <el-col :span="7" class="Right">
+        <div class="upload">
+          <span>文件上传:</span>
+          <el-upload
+              class="upload-demo"
+              drag
+              action="https://run.mocky.io/v3/9d059bf9-4660-45f2-925d-ce80ad6c4d15"
+              multiple
+          >
+            <el-icon class="el-icon--upload">
+              <upload-filled/>
+            </el-icon>
+            <div class="el-upload__text">
+              上传文件<em>点击此处</em>或拖动此处
+            </div>
+            <template #tip>
+              <div class="el-upload__tip" style="text-align: center">
+                最大文件上传限制为20GB.
+              </div>
+            </template>
+          </el-upload>
+        </div>
+      </el-col>
     </el-row>
   </div>
 </template>
 
 <script setup lang="ts">
 // 导入ElementIcon
-import {Search, Moon, Sunny} from '@element-plus/icons-vue';
+import {Search, Moon, Sunny, UploadFilled} from '@element-plus/icons-vue';
 // 导入ref
 import {ref, computed} from 'vue';
 import {useDark, useToggle} from "@vueuse/core"
@@ -351,9 +374,20 @@ img {
   margin: 10px 10px 10px 10px;
 }
 
+.LeftAndRightBox {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  width: calc(100% - 40px);
+}
+
 /* 左侧Div边框 */
 .Left {
   margin: 5px 5px 0 5px;
+  font-size: smaller;
+}
+
+.Right {
+  margin: 5px -15px 0 5px;
 }
 
 /* 修改分页属性 */
