@@ -92,6 +92,34 @@
             </template>
           </el-upload>
         </div>
+        <!-- 访问 -->
+        <div class="access">
+          <el-row :gutter="24">
+            <el-col :span="12">
+              <el-card class="card" shadow="never" style="margin:10px 0 5px 5px">
+                <template #header>
+                  <span>访问量</span>
+                </template>
+                <div class="trafficData">12,584</div>
+                <div class="trafficDataTag">同昨日增长
+                  <el-tag type="success">+5%</el-tag>
+                </div>
+              </el-card>
+            </el-col>
+            <el-col :span="12">
+              <el-card class="card" shadow="never" style="margin: 10px 5px 5px 0">
+                <template #header>
+                  <span>访问量</span>
+                </template>
+                <div class="trafficData">584</div>
+                <div class="trafficDataTag">
+                  同昨日减少
+                  <el-tag type="danger">-15%</el-tag>
+                </div>
+              </el-card>
+            </el-col>
+          </el-row>
+        </div>
       </el-col>
     </el-row>
   </div>
@@ -382,7 +410,7 @@ img {
 
 /* 左侧Div边框 */
 .Left {
-  margin: 5px 5px 0 5px;
+  margin: 5px 5px 0 15px;
   font-size: smaller;
 }
 
@@ -400,5 +428,22 @@ img {
 /* 设置列表高度为100% */
 .LeftFileListData {
   height: 100%;
+}
+
+.card {
+  border-radius: 10px;
+}
+
+.trafficData {
+  font-size: 40px;
+  font-weight: bold;
+  line-height: 1.5;
+}
+
+.trafficDataTag {
+  display: flex;
+  font-size: 15px;
+  font-weight: bold;
+  line-height: 1.3;
 }
 </style>

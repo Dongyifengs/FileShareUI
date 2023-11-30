@@ -16,5 +16,18 @@ export default defineConfig({
             cert: readFileSync("keys/agent2-cert.pem"),
         }
     },
-    plugins: [AutoImport({resolvers: [ElementPlusResolver()],}), Components({resolvers: [ElementPlusResolver(), VantResolver()],}), vue()],
+    plugins: [
+        AutoImport({
+            resolvers: [
+                ElementPlusResolver()
+            ],
+        }),
+        Components({
+            resolvers: [
+                ElementPlusResolver(),
+                VantResolver(),
+            ],
+        }),
+        vue()
+    ],
 })
