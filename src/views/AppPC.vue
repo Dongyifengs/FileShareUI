@@ -1,10 +1,11 @@
 <template>
   <div class="Home">
-    <!-- 顶部 -->
+    <!-- 顶部区域 -->
     <el-row>
       <el-col :span="24" class="Header">
         <!-- 顶部内容区域 -->
         <div class="HeaderHome">
+          <!-- 主题切换按钮 -->
           <el-switch v-model="colorTheme" class="ml-2 input-button"
                      style="--el-switch-on-color: var(--el-border-color-dark); --el-switch-off-color: var(--el-border-color-light)"
                      :active-icon="Moon" :inactive-icon="Sunny" @change="handleColorThemeChange"/>
@@ -12,7 +13,7 @@
           <div class="HeaderHomeInput">
             <!-- 输入框属性与文本 -->
             <el-input v-model="HeaderHomeInputText" placeholder="请输入要搜索的内容">
-              <!-- 选择 -->
+              <!-- 选择下拉框 -->
               <template #prepend>
                 <el-select placeholder="名字" value-key="1" style="width: 100px">
                   <el-option label="名字" value="1"/>
@@ -27,7 +28,7 @@
               </template>
             </el-input>
           </div>
-          <!-- 用户属性 -->
+          <!-- 用户属性区域 -->
           <div class="HeaderHomeUserInfo">
             <img :src="userAvatar" alt="用户头像"/>
             <span>{{ userName }}</span>
@@ -35,9 +36,9 @@
         </div>
       </el-col>
     </el-row>
-    <!-- 下面 -->
+    <!-- 下面区域 -->
     <el-row class="LeftAndRightBox">
-      <!-- 左侧 -->
+      <!-- 左侧区域 -->
       <el-col :span="17" class="Left">
         <div class="LeftFileList">
           <!-- 文件表格 -->
@@ -57,7 +58,7 @@
               </template>
             </el-table-column>
           </el-table>
-          <!-- 分页 -->
+          <!-- 分页组件 -->
           <el-pagination
               @current-change="HandleCurrentChange"
               :current-page="CurrentPage"
@@ -69,7 +70,7 @@
           />
         </div>
       </el-col>
-      <!-- 右侧 -->
+      <!-- 右侧区域 -->
       <el-col :span="7" class="Right">
         <div class="upload">
           <span>文件上传:</span>
@@ -92,7 +93,7 @@
             </template>
           </el-upload>
         </div>
-        <!-- 访问 -->
+        <!-- 访问量统计 -->
         <div class="access">
           <el-row :gutter="24">
             <el-col :span="12">
@@ -380,7 +381,7 @@ const pagedLeftFileListData = computed(() => {
 </script>
 
 <style scoped>
-/* 顶部Css样式 */
+/* 顶部样式 */
 .HeaderHome {
   display: flex;
   justify-content: center;
@@ -408,7 +409,7 @@ img {
   width: calc(100% - 40px);
 }
 
-/* 左侧Div边框 */
+/* 左侧样式 */
 .Left {
   margin: 5px 5px 0 15px;
   font-size: smaller;
@@ -418,7 +419,7 @@ img {
   margin: 5px -15px 0 5px;
 }
 
-/* 修改分页属性 */
+/* 分页样式 */
 .Pagination {
   display: flex;
   justify-content: center;
