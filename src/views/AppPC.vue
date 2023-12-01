@@ -243,6 +243,7 @@ const parserByteSize = (byte: number): string => {
 // 处理当前页变化
 const HandleCurrentChange = (val: number) => {
   CurrentPage.value = val;
+  showAllFiles();
 };
 
 // TODO: 右侧访问量统计与上传文件
