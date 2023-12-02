@@ -9,5 +9,5 @@ export enum Auth {
     /**
      * 管理员
      */
-    ADMIN
+    ADMIN,
 }

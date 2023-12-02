@@ -6,14 +6,10 @@
       <el-col :span="24" class="Header">
         <!-- 顶部内容区域 -->
         <div class="HeaderHome">
-          <!-- 主题切换按钮 -->
-          <el-switch v-model="colorTheme" class="ml-2 input-button"
-                     style="--el-switch-on-color: var(--el-border-color-dark); --el-switch-off-color: var(--el-border-color-light)"
-                     :active-icon="Moon" :inactive-icon="Sunny" @change="handleColorThemeChange"/>
           <!-- 顶部输入框 -->
           <div class="HeaderHomeInput">
             <!-- 输入框属性与文本 -->
-            <el-input v-model="HeaderHomeInputText" placeholder="请输入要搜索的内容">
+            <el-input v-model="HeaderHomeInputText" class="inputText" placeholder="请输入要搜索的内容">
               <!-- 选择下拉框 -->
               <template #prepend>
                 <el-select placeholder="名字" value-key="1" style="width: 100px">
@@ -55,22 +51,35 @@
             </div>
           </van-popup>
           <!-- 用户属性弹窗 -->
-          <van-popup v-model:show="userAvatarLoginShowTools" round position="top" class="userLoginBox">
+          <van-popup v-model:show="userAvatarLoginShowTools" round class="userLoginBox">
             <!-- 登录弹窗 -->
             <div class="login-content">
               <h2>个人中心</h2>
               <h3>用户属性:</h3>
               <div>
-                <p class="userNameId">用户ID: {{ userAboutId }} </p>
                 <p class="userNameName">用户名称: {{ userAboutName }}</p>
                 <p class="userNameType">用户类型:
-                  <span v-if="userAboutAuth === 'admin'">管理员</span>
-                  <span v-else-if="userAboutAuth === 'user'">普通用户</span>
+                  <span v-if="userAboutAuth === Auth.ADMIN">管理员</span>
+                  <span v-else-if="userAboutAuth === Auth.USER">普通用户</span>
                   <span v-else>未登录</span>
                 </p>
               </div>
               <h3>功能区:</h3>
               <el-button type="primary" @click="logout">退出登录</el-button>
+            </div>
+          </van-popup>
+          <!-- 文件详情 -->
+          <van-popup v-model:show="aboutFile" round class="adoutFile">
+            <div class="aboutFileBox">
+              <h2>文件名称:<span>XXXXXXX</span></h2>
+              <div>
+                <p>文件ID: <span>1</span></p>
+                <p>文件名: <span>测试</span></p>
+                <p>文件类型: <span>exe</span></p>
+                <p>文件MD5: <span>hjs7g90shds7s09ydg9s07gs90g7s7g</span></p>
+                <p>文件上传者: <span>wzp</span></p>
+                <p>文件上传时间: <span>2022-07-12 16:21:39</span></p>
+              </div>
             </div>
           </van-popup>
         </div>
@@ -91,12 +100,12 @@
               <template #default="scope">{{ parserByteSize(scope.row.size) }}</template>
             </el-table-column>
             <el-table-column prop="uploaderName" label="上传者" width="150"/>
-            <el-table-column fixed="right" label="操作" width="155">
+            <el-table-column fixed="right" label="操作" :width="fileOptions">
               <!-- 操作列模板 -->
               <template #default>
                 <el-button link type="primary">下载</el-button>
-                <el-button link type="primary">详情</el-button>
-                <el-button link type="danger">删除</el-button>
+                <el-button link type="primary" @click="about">详情</el-button>
+                <el-button link type="danger" v-if="userAboutAuth === Auth.ADMIN">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -144,26 +153,26 @@
                 <template #header>
                   <span>访问量</span>
                 </template>
-                <div class="trafficData">12,584</div>
+                <div class="trafficData"> {{ allAccess }}</div>
                 <div class="trafficDataTag">同昨日增长
-                  <el-tag type="success">+5%</el-tag>
+                  <el-tag type="success">+{{ allContrastAccess }}条</el-tag>
                 </div>
               </el-card>
             </el-col>
             <el-col :span="12">
               <el-card class="card" shadow="never" style="margin: 5px 5px 5px 0">
                 <template #header>
-                  <span>访问量</span>
+                  <span>下载量</span>
                 </template>
-                <div class="trafficData">584</div>
+                <div class="trafficData"> {{ allDownload }}</div>
                 <div class="trafficDataTag">
-                  同昨日减少
-                  <el-tag type="danger">-15%</el-tag>
+                  同昨日增加
+                  <el-tag type="success">+{{ allContrastDownload }}条</el-tag>
                 </div>
               </el-card>
             </el-col>
           </el-row>
-          <canvas ref="mainCanvas" :width="mainCanvasWidth" height="400"></canvas>
+          <canvas ref="mainCanvas" height="400"></canvas>
         </div>
       </el-col>
     </el-row>
@@ -172,28 +181,49 @@
 
 
 <script setup lang="ts">
-import {Search, Moon, Sunny, UploadFilled} from '@element-plus/icons-vue';
-import {ref, onMounted, markRaw} from 'vue';
+import {Search, UploadFilled} from '@element-plus/icons-vue';
+import 'element-plus/theme-chalk/dark/css-vars.css'
+import {ref, onMounted, computed} from 'vue';
 import {useDark, useToggle} from "@vueuse/core"
 import {GridComponent} from 'echarts/components';
 import {LineChart} from 'echarts/charts';
 import {UniversalTransition} from 'echarts/features';
 import {CanvasRenderer} from 'echarts/renderers';
 import {LegendComponent} from 'echarts/components';
-import {EChartsType} from "echarts";
 import * as echarts from 'echarts/core';
-import {getAllFiles, Result} from "../api/Requester.ts";
+import {getAllFiles, register, Result, getAccessInformation, getTotalAccessInformation} from "../api/Requester.ts";
 import {login} from '../api/Requester';
 import {AxiosResponse} from "axios";
 import {User} from "../entities/User.ts";
 import {ElMessage} from "element-plus";
+import {Auth} from "../entities/Auth.ts";
+import {File} from "../entities/File.ts";
+import {AccessInformation} from "../entities/AccessInformation.ts";
 
 echarts.use([GridComponent, LineChart, CanvasRenderer, UniversalTransition, LegendComponent]);
 
 // TODO: 用户属性
-const userAboutId = ref<number>(0);
-const userAboutName = ref<string>("未登录");
-const userAboutAuth = ref<string>("未登录");
+const userAboutName = computed(() => {
+  const username = sessionStorage.getItem("username");
+  if (username) {
+    return username;
+  }
+  return "未登录"
+})
+const userAboutAuth = computed(() => {
+  const authStorage = sessionStorage.getItem("auth");
+  if (authStorage) {
+    console.log(authStorage)
+    switch (authStorage) {
+      case "admin":
+        return Auth.ADMIN;
+      default:
+        return Auth.USER;
+    }
+  } else {
+    return "未登录"
+  }
+})
 
 // TODO: 头部组件
 // 搜索输入框
@@ -208,21 +238,35 @@ const userAvatarLoginShow = ref<boolean>(false);
 // 用户属性弹窗
 const userAvatarLoginShowTools = ref<boolean>(false);
 // 主题切换
-const isDark = useDark();
-const colorTheme = ref<boolean>(isDark.value);
+const isDark = useDark()
 const toggleDark = useToggle(isDark);
-const handleColorThemeChange = () => {
-  toggleDark();
+const colorTheme = ref<boolean>(isDark.value);
+// 自动主题
+const autoSetTheme = () => {
+  const now = new Date();
+  const hour = now.getHours();
+  colorTheme.value = !(hour >= 0 && hour < 24);
+  toggleDark(colorTheme.value);
 }
 // TODO: 左侧文件列表
+const aboutFile = ref<boolean>(false);
+// admin 与 user 的UI变动
+const fileOptions = computed(() => {
+  switch (userAboutAuth.value) {
+    case Auth.ADMIN:
+      return 160;
+    default:
+      return 110;
+  }
+});
 // 分页相关数据
 const CurrentPage = ref(1);
 const totalFileCount = ref<number>(0);
 const pageFileData = ref<File[]>([]);
 const showAllFiles = () => {
   getAllFiles(CurrentPage.value, 20).then((res) => {
-    totalFileCount.value = res.data.data.total
-    pageFileData.value = res.data.data.data
+    totalFileCount.value = res.data.data.total;
+    pageFileData.value = res.data.data.data;
   })
 }
 const parserByteSize = (byte: number): string => {
@@ -247,7 +291,7 @@ const HandleCurrentChange = (val: number) => {
 };
 
 // TODO: 右侧访问量统计与上传文件
-// 近5日访问数据
+// 访问情况
 const option = {
   xAxis: {
     type: 'category',
@@ -257,7 +301,7 @@ const option = {
     type: 'value'
   },
   legend: { // 启用 legend 配置项
-    data: ['访问量', '同昨日增长'], // 指定图例的标签
+    data: ['访问量', '下载量'], // 指定图例的标签
     orient: "vertical",
     right: 10,
     top: 'center'
@@ -265,22 +309,37 @@ const option = {
   series: [
     {
       name: '访问量',
-      data: [820, 932, 901, 934, 1290],
+      data: [],
       type: 'line',
       smooth: true
     },
     {
-      name: '同昨日增长',
-      data: [120, 132, 201, 334, 590],
+      name: '下载量',
+      data: [],
       type: 'line',
       smooth: true
     }
   ]
 };
-// 图标长宽数据
+// 近5日访问数据
+const contrastAccess = ref<number>();
+const contrastDownload = ref<number>();
+const fiveData = () => {
+  getAccessInformation(5)
+      .then((res: AxiosResponse<AccessInformation[]>) => {
+        for (let datum of res.data) {
+          option.series[0].data.push(datum.totalAccess);
+          option.series[1].data.push(datum.totalDownload);
+        }
+        contrastAccess.value = res.data[4].totalAccess
+        contrastDownload.value = res.data[4].totalDownload
+        changeFigureSize();
+      })
+}
+// 图表长宽数据
 const mainCanvas = ref<HTMLCanvasElement>();
 const accessDiv = ref<HTMLDivElement>();
-const charts = ref<EChartsType>();
+let charts: echarts.ECharts;
 const changeFigureSize = () => {
   if (!mainCanvas.value) {
     return;
@@ -289,18 +348,32 @@ const changeFigureSize = () => {
     return;
   }
   mainCanvas.value.width = accessDiv.value.clientWidth;
-  if (charts.value) {
-    charts.value.resize({"width": mainCanvas.value.width, "height": mainCanvas.value.height})
+  if (charts) {
+    charts.resize({"width": mainCanvas.value.width, "height": mainCanvas.value.height})
   } else {
-    charts.value = markRaw(echarts.init(mainCanvas.value))
-    charts.value.setOption(option)
+    charts = echarts.init(mainCanvas.value);
+    charts.setOption(option)
   }
 }
+// 所有数据总和
+const allAccess = ref<number>();
+const allDownload = ref<number>();
+const allData = () => {
+  getTotalAccessInformation()
+      .then((res: AxiosResponse<AccessInformation>) => {
+        const resdata = res.data;
+        allAccess.value = resdata.totalAccess
+        allDownload.value = resdata.totalDownload
+      })
+}
+// 增长数据
+const allContrastAccess = contrastAccess;
+const allContrastDownload = contrastDownload;
 
 // TODO: 用户点击事件
 // 点击用户头像弹出登录窗口
 const imgLoginBox = () => {
-  if (sessionStorage.getItem("userInfo") || localStorage.getItem("userInfo")) {
+  if (sessionStorage.getItem("authorization")) {
     // 如果本地存储中有用户信息，即用户已登录
     // 显示用户信息窗口并隐藏登录窗口
     userAvatarLoginShowTools.value = true;
@@ -314,13 +387,10 @@ const imgLoginBox = () => {
 // 点击登录按钮
 const userLogin = () => {
   // 清理本地cookie
-  localStorage.removeItem("userInfo");
-  sessionStorage.removeItem("userInfo");
+  sessionStorage.clear();
   // 用户登录函数
   if (userName.value == "" || userPassword.value == "") {
     ElMessage.error("用户名密码不能为空");
-    localStorage.removeItem("userInfo");
-    sessionStorage.removeItem("userInfo");
     return;
   }
   // 调用登录接口
@@ -328,117 +398,65 @@ const userLogin = () => {
       .then((res: AxiosResponse<Result<User>>) => {
         // 发送登录请求
         if (res.data.status == 200) {
-          // 登录成功
-          // 存储用户信息到sessionStorage
-          const userInfo = {
-            userName: userName.value,
-            userPassword: userPassword.value,
-          };
-          sessionStorage.setItem("userInfo", JSON.stringify(userInfo));
-          console.log(res.data.data.name, res.data.data.id, res.data.data.auth);
-          const resdata = res.data.data
-          userAboutId.value = Number(resdata.id);
-          userAboutName.value = String(resdata.name);
-          userAboutAuth.value = String(resdata.auth)
+          const username = res.data.data.name;
+          sessionStorage.setItem("username", username);
+          sessionStorage.setItem("auth", res.data.data.auth.toString());
           // 延迟一段时间后显示用户信息窗口
           setTimeout(() => {
             imgLoginBox();
-          }, 1500); // 1500毫秒（1.5秒）延迟示例
+          }, 1000); // 1000毫秒（1秒）延迟示例
           ElMessage.success("登录成功!");
+          window.location.reload()
         } else {
           ElMessage.error("登录失败,用户名密码错误!");
-          localStorage.removeItem("userInfo");
-          sessionStorage.removeItem("userInfo");
         }
       })
-      .catch(() => {
-        ElMessage.error("登录失败,用户名密码错误!");
-        localStorage.removeItem("userInfo");
-        sessionStorage.removeItem("userInfo");
-      });
 };
+// 注销登陆
 const logout = () => {
+  // 提醒弹窗
+  ElMessage.success("退出成功!")
   // 清除本地存储中的用户信息
-  localStorage.removeItem("userInfo");
-  sessionStorage.removeItem("userInfo");
-  // 刷新页面
-  window.location.reload();
+  sessionStorage.clear();
+  userAvatarLoginShowTools.value = false;
+  window.location.reload()
 };
-
-// TODO: 页面加载执行
-// 在页面加载时检查sessionStorage中的用户信息
-const checkSessionStorageUserInfo = () => {
-  if (checkedStorage) {
-    return; // 如果已经检查过，不再重复执行
+// 用户注册并登录接口
+const userEnroll = () => {
+  // 用户注册函数
+  if (userName.value == '' || userPassword.value == '') {
+    ElMessage.error("用户名密码不能为空")
+    return;
   }
-  const userInfoString = sessionStorage.getItem("userInfo");
-  if (userInfoString) {
-    // 解析用户信息
-    const userInfo = JSON.parse(userInfoString);
-    userName.value = userInfo.userName;
-    userPassword.value = userInfo.userPassword;
-    // 验证用户信息
-    verifyUserInfo();
-  }
-};
-
-// 验证用户信息
-const verifyUserInfo = () => {
-  if (userName.value === "" || userPassword.value === "") {
-    return; // 用户名或密码为空，不进行验证
-  }
-  login(userName.value, userPassword.value)
-      .then((res: AxiosResponse<Result<User>>) => {
-        if (res.data.status === 200) {
-          console.log(res.data.data.name, res.data.data.id, res.data.data.auth);
-          userAboutId.value = Number(res.data.data.id);
-          userAboutName.value = String(res.data.data.name);
-          userAboutAuth.value = String(res.data.data.auth)
-          ElMessage.success("登录成功!");
-          userAvatarLoginShowTools.value = true; // 验证成功，显示用户信息窗口
-          userAvatarLoginShow.value = false; // 隐藏登录窗口
-        } else {
-          ElMessage.error("验证失败，请重新登录!");
-          userAvatarLoginShowTools.value = false; // 验证失败，隐藏用户信息窗口
-          userAvatarLoginShow.value = true; // 显示登录窗口
-          localStorage.removeItem("userInfo");
-          sessionStorage.removeItem("userInfo");
-        }
-      })
-      .catch(() => {
-        ElMessage.error("验证失败，请重新登录!");
-        userAvatarLoginShowTools.value = false; // 验证失败，隐藏用户信息窗口
-        userAvatarLoginShow.value = true; // 显示登录窗口
-        localStorage.removeItem("userInfo");
-        sessionStorage.removeItem("userInfo");
-      });
-};
-
-// 在页面加载时检查本地存储中的用户信息
-let checkedStorage = false;
-const checkLocalStorageUserInfo = () => {
-  if (checkedStorage) {
-    return; // 如果已经检查过，不再重复执行
-  }
-  const userInfoString = localStorage.getItem("userInfo");
-  if (userInfoString) {
-    // 解析用户信息
-    const userInfo = JSON.parse(userInfoString);
-    userName.value = userInfo.userName;
-    userPassword.value = userInfo.userPassword;
-    // 验证用户信息
-    verifyUserInfo();
-  }
-};
-
+  register(userName.value, userPassword.value, Auth.USER).then((res) => {
+    switch (res.data.status) {
+      case 251:
+        ElMessage.error("邀请码错误！");
+        break;
+      case 501:
+        ElMessage.error("存在同名用户！");
+        break;
+      case 200:
+        ElMessage.success("注册成功");
+        sessionStorage.setItem("username", res.data.data.name);
+        sessionStorage.setItem("auth", res.data.data.auth.toString());
+        break;
+      default:
+        ElMessage.error("无法注册！");
+    }
+  });
+}
+// 文件详情
+const about = () => {
+  aboutFile.value = true
+}
 // TODO: onMounted实时更新
 onMounted(() => {
   window.addEventListener("resize", changeFigureSize);
-  changeFigureSize();
+  fiveData();
   showAllFiles();
-  checkSessionStorageUserInfo();
-  checkLocalStorageUserInfo();
-  checkedStorage = true
+  autoSetTheme();
+  allData();
 })
 </script>
 
@@ -521,5 +539,9 @@ img {
 
 .userLoginButton {
   margin: 10px 10px 0 10px;
+}
+
+.aboutFileBox {
+  margin: 20px;
 }
 </style>
