@@ -1,15 +1,15 @@
 <template>
   <!-- 主容器 -->
-  <div class="Home">
+  <div>
     <!-- 顶部区域 -->
     <el-row>
-      <el-col :span="24" class="Header">
+      <el-col :span="24">
         <!-- 顶部内容区域 -->
-        <div class="HeaderHome">
+        <div class="header">
           <!-- 顶部输入框 -->
-          <div class="HeaderHomeInput">
+          <div>
             <!-- 输入框属性与文本 -->
-            <el-input v-model="HeaderHomeInputText" class="inputText" placeholder="请输入要搜索的内容">
+            <el-input v-model="searchInput" placeholder="请输入要搜索的内容">
               <!-- 选择下拉框 -->
               <template #prepend>
                 <el-select placeholder="名字" value-key="1" style="width: 100px">
@@ -26,41 +26,41 @@
             </el-input>
           </div>
           <!-- 用户属性区域 -->
-          <div class="HeaderHomeUserInfo">
+          <div class="header-user">
             <img :src="userAvatar" alt="用户头像" @click="imgLoginBox"/>
-            <span>{{ userName }}</span>
+            <span>{{ username }}</span>
           </div>
           <!-- 用户登录弹窗 -->
-          <van-popup v-model:show="userAvatarLoginShow" round class="userLoginBox">
+          <van-popup v-model:show="userAvatarLoginShow" round>
             <!-- 登录/注册弹窗内容 -->
             <div class="login-content">
               <h2>登录/注册</h2>
               <p>欢迎来到文件分享站</p>
               <label for="userName">用户名</label>
-              <van-field id="userName" v-model="userName" center placeholder="请输入用户名"/>
+              <van-field id="userName" v-model="usernameInput" center placeholder="请输入用户名"/>
               <!-- 用户名输入框 -->
               <label for="password">密码</label>
-              <van-field id="password" v-model="userPassword" center type="password" placeholder="请输入用户密码"/>
+              <van-field id="password" v-model="userPasswordInput" center type="password" placeholder="请输入用户密码"/>
               <!-- 密码输入框 -->
               <div class="actions">
-                <van-button class="userLoginButton" @click="userLogin" type="primary">登录</van-button>
+                <van-button class="user-login-register-button" @click="userLogin" type="primary">登录</van-button>
                 <!-- 登录按钮 -->
-                <van-button class="userLoginButton" @click="userEnroll" type="primary">注册后登录</van-button>
+                <van-button class="user-login-register-button" @click="userEnroll" type="primary">注册后登录</van-button>
                 <!-- 注册按钮 -->
               </div>
             </div>
           </van-popup>
           <!-- 用户属性弹窗 -->
-          <van-popup v-model:show="userAvatarLoginShowTools" round class="userLoginBox">
+          <van-popup v-model:show="userAvatarLoginShowTools" round>
             <!-- 登录弹窗 -->
             <div class="login-content">
               <h2>个人中心</h2>
               <h3>用户属性:</h3>
               <div>
-                <p class="userNameName">用户名称: {{ userAboutName }}</p>
-                <p class="userNameType">用户类型:
-                  <span v-if="userAboutAuth === Auth.ADMIN">管理员</span>
-                  <span v-else-if="userAboutAuth === Auth.USER">普通用户</span>
+                <p>用户名称: {{ username }}</p>
+                <p>用户类型:
+                  <span v-if="userAuth === Auth.ADMIN">管理员</span>
+                  <span v-else-if="userAuth === Auth.USER">普通用户</span>
                   <span v-else>未登录</span>
                 </p>
               </div>
@@ -69,8 +69,8 @@
             </div>
           </van-popup>
           <!-- 文件详情 -->
-          <van-popup v-model:show="aboutFile" round class="adoutFile">
-            <div class="aboutFileBox">
+          <van-popup v-model:show="showFileInformation" round>
+            <div class="file-information-popover">
               <h2>文件名称:<span>XXXXXXX</span></h2>
               <div>
                 <p>文件ID: <span>1</span></p>
@@ -86,13 +86,12 @@
       </el-col>
     </el-row>
     <!-- 下面区域 -->
-    <el-row class="LeftAndRightBox">
+    <el-row class="main">
       <!-- 左侧区域 -->
-      <el-col :span="17" class="Left">
-        <div class="LeftFileList">
+      <el-col :span="17" class="files-data">
+        <div>
           <!-- 文件表格 -->
-          <el-table ref="fileListTable" :data="pageFileData" class="LeftFileListData" border stripe
-                    style="width: 100%">
+          <el-table ref="fileListTable" :data="pageFileData" class="files-data-table" border stripe>
             <el-table-column prop="id" label="ID" width="100"/>
             <el-table-column prop="name" label="文件名称" width="650"/>
             <el-table-column prop="type" label="文件格式" width="150"/>
@@ -100,30 +99,30 @@
               <template #default="scope">{{ parserByteSize(scope.row.size) }}</template>
             </el-table-column>
             <el-table-column prop="uploaderName" label="上传者" width="150"/>
-            <el-table-column fixed="right" label="操作" :width="fileOptions">
+            <el-table-column fixed="right" label="操作" :width="fileOptionRowWidth">
               <!-- 操作列模板 -->
               <template #default>
                 <el-button link type="primary">下载</el-button>
-                <el-button link type="primary" @click="about">详情</el-button>
-                <el-button link type="danger" v-if="userAboutAuth === Auth.ADMIN">删除</el-button>
+                <el-button link type="primary" @click="showFileInformationDialog">详情</el-button>
+                <el-button link type="danger" v-if="userAuth === Auth.ADMIN">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
           <!-- 分页组件 -->
           <el-pagination
               @current-change="HandleCurrentChange"
-              :current-page="CurrentPage"
+              :current-page="currentPage"
               :page-sizes="[20]"
               :page-size="20"
               layout="prev, pager, next"
               :total="totalFileCount"
-              class="Pagination"
+              class="pagination"
           />
         </div>
       </el-col>
       <!-- 右侧区域 -->
-      <el-col :span="7" class="Right">
-        <div class="upload">
+      <el-col :span="7" class="file-uploader">
+        <div>
           <span>文件上传:</span>
           <el-upload
               class="upload-demo"
@@ -146,15 +145,15 @@
         </div>
         <!-- 访问量统计 -->
         <span>访问量统计:</span>
-        <div class="access" ref="accessDiv">
+        <div ref="accessDiv">
           <el-row :gutter="24">
             <el-col :span="12">
               <el-card class="card" shadow="never" style="margin:5px 0 5px 5px">
                 <template #header>
                   <span>访问量</span>
                 </template>
-                <div class="trafficData"> {{ allAccess }}</div>
-                <div class="trafficDataTag">同昨日增长
+                <div class="access-data"> {{ allAccess }}</div>
+                <div class="access-data-increase">同昨日增长
                   <el-tag type="success">+{{ allContrastAccess }}条</el-tag>
                 </div>
               </el-card>
@@ -164,8 +163,8 @@
                 <template #header>
                   <span>下载量</span>
                 </template>
-                <div class="trafficData"> {{ allDownload }}</div>
-                <div class="trafficDataTag">
+                <div class="access-data"> {{ allDownload }}</div>
+                <div class="access-data-increase">
                   同昨日增加
                   <el-tag type="success">+{{ allContrastDownload }}条</el-tag>
                 </div>
@@ -203,14 +202,14 @@ import {AccessInformation} from "../entities/AccessInformation.ts";
 echarts.use([GridComponent, LineChart, CanvasRenderer, UniversalTransition, LegendComponent]);
 
 // TODO: 用户属性
-const userAboutName = computed(() => {
+const username = computed(() => {
   const username = sessionStorage.getItem("username");
   if (username) {
     return username;
   }
   return "未登录"
 })
-const userAboutAuth = computed(() => {
+const userAuth = computed(() => {
   const authStorage = sessionStorage.getItem("auth");
   if (authStorage) {
     console.log(authStorage)
@@ -227,12 +226,12 @@ const userAboutAuth = computed(() => {
 
 // TODO: 头部组件
 // 搜索输入框
-const HeaderHomeInputText = ref('');
+const searchInput = ref('');
 // 用户头像
 const userAvatar = 'src/assets/userAvatar.jpg';
 // 用户名
-const userName = ref<string>("");
-const userPassword = ref<string>("");
+const usernameInput = ref<string>("");
+const userPasswordInput = ref<string>("");
 // 用户登录弹窗
 const userAvatarLoginShow = ref<boolean>(false);
 // 用户属性弹窗
@@ -249,10 +248,10 @@ const autoSetTheme = () => {
   toggleDark(colorTheme.value);
 }
 // TODO: 左侧文件列表
-const aboutFile = ref<boolean>(false);
+const showFileInformation = ref<boolean>(false);
 // admin 与 user 的UI变动
-const fileOptions = computed(() => {
-  switch (userAboutAuth.value) {
+const fileOptionRowWidth = computed(() => {
+  switch (userAuth.value) {
     case Auth.ADMIN:
       return 160;
     default:
@@ -260,11 +259,11 @@ const fileOptions = computed(() => {
   }
 });
 // 分页相关数据
-const CurrentPage = ref(1);
+const currentPage = ref(1);
 const totalFileCount = ref<number>(0);
 const pageFileData = ref<File[]>([]);
 const showAllFiles = () => {
-  getAllFiles(CurrentPage.value, 20).then((res) => {
+  getAllFiles(currentPage.value, 20).then((res) => {
     totalFileCount.value = res.data.data.total;
     pageFileData.value = res.data.data.data;
   })
@@ -286,7 +285,7 @@ const parserByteSize = (byte: number): string => {
 }
 // 处理当前页变化
 const HandleCurrentChange = (val: number) => {
-  CurrentPage.value = val;
+  currentPage.value = val;
   showAllFiles();
 };
 
@@ -389,12 +388,12 @@ const userLogin = () => {
   // 清理本地cookie
   sessionStorage.clear();
   // 用户登录函数
-  if (userName.value == "" || userPassword.value == "") {
+  if (usernameInput.value == "" || userPasswordInput.value == "") {
     ElMessage.error("用户名密码不能为空");
     return;
   }
   // 调用登录接口
-  login(userName.value, userPassword.value)
+  login(usernameInput.value, userPasswordInput.value)
       .then((res: AxiosResponse<Result<User>>) => {
         // 发送登录请求
         if (res.data.status == 200) {
@@ -424,11 +423,11 @@ const logout = () => {
 // 用户注册并登录接口
 const userEnroll = () => {
   // 用户注册函数
-  if (userName.value == '' || userPassword.value == '') {
+  if (usernameInput.value == '' || userPasswordInput.value == '') {
     ElMessage.error("用户名密码不能为空")
     return;
   }
-  register(userName.value, userPassword.value, Auth.USER).then((res) => {
+  register(usernameInput.value, userPasswordInput.value, Auth.USER).then((res) => {
     switch (res.data.status) {
       case 251:
         ElMessage.error("邀请码错误！");
@@ -447,8 +446,8 @@ const userEnroll = () => {
   });
 }
 // 文件详情
-const about = () => {
-  aboutFile.value = true
+const showFileInformationDialog = () => {
+  showFileInformation.value = true
 }
 // TODO: onMounted实时更新
 onMounted(() => {
@@ -463,7 +462,7 @@ onMounted(() => {
 
 <style scoped>
 /* 顶部样式 */
-.HeaderHome {
+.header {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -471,7 +470,7 @@ onMounted(() => {
 }
 
 /* 用户属性样式 */
-.HeaderHomeUserInfo {
+.header-user {
   display: flex;
   align-items: center;
 }
@@ -484,45 +483,46 @@ img {
   margin: 10px 10px 10px 10px;
 }
 
-.LeftAndRightBox {
+.main {
   flex-direction: row;
   flex-wrap: nowrap;
   width: calc(100% - 40px);
 }
 
 /* 左侧样式 */
-.Left {
+.files-data {
   margin: 5px 5px 0 15px;
   font-size: smaller;
 }
 
-.Right {
+.file-uploader {
   margin: 5px -15px 0 5px;
 }
 
 /* 分页样式 */
-.Pagination {
+.pagination {
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
 /* 设置列表高度为100% */
-.LeftFileListData {
+.files-data-table {
   height: 100%;
+  width: 100% !important;
 }
 
 .card {
   border-radius: 10px;
 }
 
-.trafficData {
+.access-data {
   font-size: 40px;
   font-weight: bold;
   line-height: 1.5;
 }
 
-.trafficDataTag {
+.access-data-increase {
   display: flex;
   font-size: 15px;
   font-weight: bold;
@@ -537,11 +537,11 @@ img {
   left: 50%;
 }
 
-.userLoginButton {
+.user-login-register-button {
   margin: 10px 10px 0 10px;
 }
 
-.aboutFileBox {
+.file-information-popover {
   margin: 20px;
 }
 </style>
