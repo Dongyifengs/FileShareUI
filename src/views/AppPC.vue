@@ -1,4 +1,5 @@
 <template>
+  <van-config-provider :theme="vantTheme"></van-config-provider>
   <!-- 主容器 -->
   <div>
     <!-- 顶部区域 -->
@@ -26,8 +27,8 @@
             </el-input>
           </div>
           <!-- 用户属性区域 -->
-          <div class="header-user">
-            <img :src="userAvatar" alt="用户头像" @click="imgLoginBox"/>
+          <div class="header-user" @click="imgLoginBox">
+            <img :src="userAvatar" alt="用户头像"/>
             <span>{{ username }}</span>
           </div>
           <!-- 用户登录弹窗 -->
@@ -182,7 +183,7 @@
 <script setup lang="ts">
 import {Search, UploadFilled} from '@element-plus/icons-vue';
 import 'element-plus/theme-chalk/dark/css-vars.css'
-import {ref, onMounted, computed} from 'vue';
+import {ref, onMounted, computed, onBeforeMount} from 'vue';
 import {useDark, useToggle} from "@vueuse/core"
 import {GridComponent} from 'echarts/components';
 import {LineChart} from 'echarts/charts';
@@ -226,7 +227,7 @@ const userAuth = computed(() => {
 
 // TODO: 头部组件
 // 搜索输入框
-const searchInput = ref('');
+const searchInput = ref<string>('');
 // 用户头像
 const userAvatar = 'src/assets/userAvatar.jpg';
 // 用户名
@@ -239,13 +240,17 @@ const userAvatarLoginShowTools = ref<boolean>(false);
 // 主题切换
 const isDark = useDark()
 const toggleDark = useToggle(isDark);
-const colorTheme = ref<boolean>(isDark.value);
+const vantTheme = ref<"light" | "dark">("light");
 // 自动主题
-const autoSetTheme = () => {
+const initTheme = () => {
   const now = new Date();
   const hour = now.getHours();
-  colorTheme.value = !(hour >= 0 && hour < 24);
-  toggleDark(colorTheme.value);
+  if (hour < 7 || hour > 16){
+    toggleDark(true);
+    vantTheme.value = "dark";
+    return;
+  }
+  toggleDark(false);
 }
 // TODO: 左侧文件列表
 const showFileInformation = ref<boolean>(false);
@@ -259,7 +264,7 @@ const fileOptionRowWidth = computed(() => {
   }
 });
 // 分页相关数据
-const currentPage = ref(1);
+const currentPage = ref<number>(1);
 const totalFileCount = ref<number>(0);
 const pageFileData = ref<File[]>([]);
 const showAllFiles = () => {
@@ -308,13 +313,11 @@ const option = {
   series: [
     {
       name: '访问量',
-      data: [],
       type: 'line',
       smooth: true
     },
     {
       name: '下载量',
-      data: [],
       type: 'line',
       smooth: true
     }
@@ -326,10 +329,14 @@ const contrastDownload = ref<number>();
 const fiveData = () => {
   getAccessInformation(5)
       .then((res: AxiosResponse<AccessInformation[]>) => {
+        const accessCounts = [];
+        const downloadCounts = [];
         for (let datum of res.data) {
-          option.series[0].data.push(datum.totalAccess);
-          option.series[1].data.push(datum.totalDownload);
+          accessCounts.push(datum.totalAccess);
+          downloadCounts.push(datum.totalDownload);
         }
+        option.series[0]['data'] = accessCounts;
+        option.series[1]['data'] = downloadCounts;
         contrastAccess.value = res.data[4].totalAccess
         contrastDownload.value = res.data[4].totalDownload
         changeFigureSize();
@@ -360,9 +367,8 @@ const allDownload = ref<number>();
 const allData = () => {
   getTotalAccessInformation()
       .then((res: AxiosResponse<AccessInformation>) => {
-        const resdata = res.data;
-        allAccess.value = resdata.totalAccess
-        allDownload.value = resdata.totalDownload
+        allAccess.value = res.data.totalAccess
+        allDownload.value = res.data.totalDownload
       })
 }
 // 增长数据
@@ -450,11 +456,13 @@ const showFileInformationDialog = () => {
   showFileInformation.value = true
 }
 // TODO: onMounted实时更新
+onBeforeMount(() => {
+  initTheme();
+})
 onMounted(() => {
   window.addEventListener("resize", changeFigureSize);
   fiveData();
   showAllFiles();
-  autoSetTheme();
   allData();
 })
 </script>
