@@ -7,7 +7,7 @@ export interface User {
     /**
      * 用户id
      */
-    id: string
+    id: number;
     /**
      * 用户名
      */

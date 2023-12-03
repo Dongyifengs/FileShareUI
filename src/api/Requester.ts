@@ -6,6 +6,7 @@ import {User} from "../entities/User";
 import {Auth} from "../entities/Auth";
 import {File} from "../entities/File";
 import {SearchType} from "../entities/SearchType.ts";
+import {AccessInformation} from "../entities/AccessInformation.ts";
 
 export const baseUrl = 'http://localhost:8081';
 
@@ -27,7 +28,7 @@ const instance = axios.create({
     timeout: 1000,
     headers: {'Content-Type': 'application/json'}
 });
-axios.interceptors.request.use(function (config) {
+instance.interceptors.request.use(function (config) {
     config.headers['Authorization'] = window.sessionStorage.getItem("authorization");
     return config;
 }, function (error) {
@@ -36,8 +37,8 @@ axios.interceptors.request.use(function (config) {
 });
 
 // 添加响应拦截器
-axios.interceptors.response.use(function (response) {
-    const authorization = response.headers['Set-Authorization'];
+instance.interceptors.response.use(function (response) {
+    const authorization = response.headers['set-authorization'];
     if (authorization) {
         window.sessionStorage.setItem("authorization", authorization);
     }
@@ -137,5 +138,11 @@ export const search = (page: number, num: number, searchType: SearchType, data: 
  * @param count 获取的天数
  */
 export const getAccessInformation = (count: number) => {
-    return instance.get<File[]>("/api/access/get", {params: {count}});
+    return instance.get<AccessInformation[]>("/api/access/get", {params: {count}});
+}
+/**
+ * 获取总访问情况
+ */
+export const getTotalAccessInformation = () => {
+    return instance.get<AccessInformation>("/api/access/getAll");
 }
