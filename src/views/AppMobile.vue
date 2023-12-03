@@ -13,7 +13,7 @@
           </template>
         </van-field>
       </van-cell-group>
-
+      <!-- 用户头像 -->
       <van-image
           class="userAvatar"
           width="50"
@@ -22,10 +22,8 @@
           radius="5"
           @click="toggleUserLogin"
       />
-      <!-- 用户头像 -->
-
+      <!-- 登录弹窗 -->
       <van-popup v-model:show="userAvatarLoginShow" round position="top" class="userLoginBox">
-        <!-- 登录弹窗 -->
         <div class="login-content">
           <h2>登录/注册</h2>
           <p>欢迎来到文件分享站</p>
@@ -150,7 +148,7 @@ const totalFiles = ref<number>(0);
 
 // TODO: 用户登录弹窗
 const toggleUserLogin = () => {
-  if (sessionStorage.getItem("userInfo") || localStorage.getItem("userInfo")) {
+  if (sessionStorage.getItem("authorization")) {
     // 如果本地存储中有用户信息，即用户已登录
     // 显示用户信息窗口并隐藏登录窗口
     userAvatarLoginShowTools.value = true;
@@ -162,129 +160,43 @@ const toggleUserLogin = () => {
   }
 };
 
-
 // TODO: 用户配置
 const logout = () => {
+  // 提醒弹窗
+  ElMessage.success("退出成功!")
   // 清除本地存储中的用户信息
-  localStorage.removeItem("userInfo");
-  sessionStorage.removeItem("userInfo");
-
-  // 刷新页面
-  window.location.reload();
+  sessionStorage.clear();
+  userAvatarLoginShowTools.value = false;
+  window.location.reload()
 };
 
 // TODO: 用户登录接口
 const userLogin = () => {
   // 清理本地cookie
-  localStorage.removeItem("userInfo");
-  sessionStorage.removeItem("userInfo");
-
+  sessionStorage.clear();
   // 用户登录函数
   if (userName.value == "" || userPassword.value == "") {
     ElMessage.error("用户名密码不能为空");
-    localStorage.removeItem("userInfo");
-    sessionStorage.removeItem("userInfo");
     return;
   }
+  // 调用登录接口
   login(userName.value, userPassword.value)
       .then((res: AxiosResponse<Result<User>>) => {
         // 发送登录请求
         if (res.data.status == 200) {
-          // 登录成功
-          // 存储用户信息到sessionStorage
-          const userInfo = {
-            userName: userName.value,
-            userPassword: userPassword.value,
-          };
-          sessionStorage.setItem("userInfo", JSON.stringify(userInfo));
-          console.log(res.data.data.name, res.data.data.id, res.data.data.auth);
-          userNameToolsId.value = Number(res.data.data.id);
-          userNameToolsName.value = String(res.data.data.name);
-          userNameToolsAuth.value = String(res.data.data.auth)
+          const user = res.data.data;
+          sessionStorage.setItem("username", user.name);
+          sessionStorage.setItem("auth", user.auth.toString());
           // 延迟一段时间后显示用户信息窗口
           setTimeout(() => {
             toggleUserLogin();
           }, 1000); // 1000毫秒（1秒）延迟示例
-
           ElMessage.success("登录成功!");
+          window.location.reload()
         } else {
           ElMessage.error("登录失败,用户名密码错误!");
-          localStorage.removeItem("userInfo");
-          sessionStorage.removeItem("userInfo");
         }
       })
-      .catch(() => {
-        ElMessage.error("登录失败,用户名密码错误!");
-        localStorage.removeItem("userInfo");
-        sessionStorage.removeItem("userInfo");
-      });
-};
-
-
-// 在页面加载时检查本地存储中的用户信息
-let checkedStorage = false;
-const checkLocalStorageUserInfo = () => {
-  if (checkedStorage) {
-    return; // 如果已经检查过，不再重复执行
-  }
-  const userInfoString = localStorage.getItem("userInfo");
-  if (userInfoString) {
-    // 解析用户信息
-    const userInfo = JSON.parse(userInfoString);
-    userName.value = userInfo.userName;
-    userPassword.value = userInfo.userPassword;
-
-    // 验证用户信息
-    verifyUserInfo();
-  }
-};
-// 在页面加载时检查sessionStorage中的用户信息
-const checkSessionStorageUserInfo = () => {
-  if (checkedStorage) {
-    return; // 如果已经检查过，不再重复执行
-  }
-  const userInfoString = sessionStorage.getItem("userInfo");
-  if (userInfoString) {
-    // 解析用户信息
-    const userInfo = JSON.parse(userInfoString);
-    userName.value = userInfo.userName;
-    userPassword.value = userInfo.userPassword;
-
-    // 验证用户信息
-    verifyUserInfo();
-  }
-};
-// 验证用户信息
-const verifyUserInfo = () => {
-  if (userName.value === "" || userPassword.value === "") {
-    return; // 用户名或密码为空，不进行验证
-  }
-
-  login(userName.value, userPassword.value)
-      .then((res: AxiosResponse<Result<User>>) => {
-        if (res.data.status === 200) {
-          console.log(res.data.data.name, res.data.data.id, res.data.data.auth);
-          userNameToolsId.value = Number(res.data.data.id);
-          userNameToolsName.value = String(res.data.data.name);
-          userNameToolsAuth.value = String(res.data.data.auth)
-          ElMessage.success("登录成功!");
-          userAvatarLoginShowTools.value = true; // 验证成功，显示用户信息窗口
-          userAvatarLoginShow.value = false; // 隐藏登录窗口
-        } else {
-          ElMessage.error("验证失败，请重新登录!");
-          userAvatarLoginShowTools.value = false; // 验证失败，隐藏用户信息窗口
-          userAvatarLoginShow.value = true; // 显示登录窗口
-          localStorage.removeItem("userInfo");
-          sessionStorage.removeItem("userInfo");
-        }
-      })
-      .catch(() => {
-        ElMessage.error("验证失败，请重新登录!");
-        userAvatarLoginShowTools.value = false; // 验证失败，隐藏用户信息窗口
-        userAvatarLoginShow.value = true; // 显示登录窗口
-        localStorage.removeItem("userInfo");
-        sessionStorage.removeItem("userInfo");
-      });
 };
 
 // TODO: 用户注册接口
@@ -294,7 +206,7 @@ const userEnroll = () => {
     ElMessage.error("用户名密码不能为空")
     return;
   }
-  register(userName.value, userPassword.value, Auth.user).then((res) => {
+  register(userName.value, userPassword.value, Auth.USER).then((res) => {
     switch (res.data.status) {
       case 251:
         ElMessage.error("邀请码错误！");
@@ -304,31 +216,8 @@ const userEnroll = () => {
         break;
       case 200:
         ElMessage.success("注册成功");
-        login(userName.value, userPassword.value)
-            .then((res: AxiosResponse<Result<User>>) => {
-              if (res.data.status === 200) {
-                console.log(res.data.data.name, res.data.data.id, res.data.data.auth);
-                userNameToolsId.value = Number(res.data.data.id);
-                userNameToolsName.value = String(res.data.data.name);
-                userNameToolsAuth.value = String(res.data.data.auth)
-                ElMessage.success("登录成功!");
-                userAvatarLoginShowTools.value = true; // 验证成功，显示用户信息窗口
-                userAvatarLoginShow.value = false; // 隐藏登录窗口
-              } else {
-                ElMessage.error("验证失败，请重新登录!");
-                userAvatarLoginShowTools.value = false; // 验证失败，隐藏用户信息窗口
-                userAvatarLoginShow.value = true; // 显示登录窗口
-                localStorage.removeItem("userInfo");
-                sessionStorage.removeItem("userInfo");
-              }
-            })
-            .catch(() => {
-              ElMessage.error("验证失败，请重新登录!");
-              userAvatarLoginShowTools.value = false; // 验证失败，隐藏用户信息窗口
-              userAvatarLoginShow.value = true; // 显示登录窗口
-              localStorage.removeItem("userInfo");
-              sessionStorage.removeItem("userInfo");
-            });
+        sessionStorage.setItem("username", res.data.data.name);
+        sessionStorage.setItem("auth", res.data.data.auth.toString());
         break;
       default:
         ElMessage.error("无法注册！");
@@ -367,9 +256,6 @@ const handleDelete = () => {
 // TODO: 实时更新
 onMounted(() => {
   fetchFiles();
-  checkSessionStorageUserInfo();
-  checkLocalStorageUserInfo();
-  checkedStorage = true;
 })
 </script>
 
