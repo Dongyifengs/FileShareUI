@@ -123,6 +123,20 @@ export const getLink = (id: number) => {
 export const remove = (id: number) => {
     return instance.post<Result<boolean>>("/api/file/remove", {id});
 }
+const handlerSearchType = (searchType: SearchType): string => {
+    switch (searchType){
+        case SearchType.ID:
+            return "ID"
+        case SearchType.TYPE:
+            return "TYPE"
+        case SearchType.UPLOAD_DAY:
+            return "UPLOAD_DAY"
+        case SearchType.UPLOADER:
+            return "UPLOADER"
+        default:
+            return "FILE_NAME"
+    }
+}
 /**
  * 搜索
  * @param page 页数
@@ -131,7 +145,7 @@ export const remove = (id: number) => {
  * @param data 搜索数据
  */
 export const search = (page: number, num: number, searchType: SearchType, data: string) => {
-    return instance.get<PageResult<File>>("/api/file/search", {params: {page, num, searchType, data}});
+    return instance.get<PageResult<File>>("/api/file/search", {params: {page, num, type: handlerSearchType(searchType), data}});
 }
 /**
  * 获取访问情况
@@ -145,4 +159,11 @@ export const getAccessInformation = (count: number) => {
  */
 export const getTotalAccessInformation = () => {
     return instance.get<AccessInformation>("/api/access/getAll");
+}
+/**
+ * 检查是否可以上传
+ * @param filename 文件名
+ */
+export const checkUpload = (filename: string) => {
+    return instance.get<Result<boolean>>("/api/file/checkUpload", {params: {filename}});
 }
