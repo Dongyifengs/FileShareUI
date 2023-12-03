@@ -618,11 +618,15 @@ const handleUpload = (options: UploadRequestOptions): XMLHttpRequest | Promise<u
   let promise = upload(options, abortController);
   promise.then((response: AxiosResponse<Result<File>>) => {
     if (response.data.status == 200){
-      options.onSuccess(response);
-    }else if(response.data.status == 401){
+      return;
+    }
+    if(response.data.status == 401){
       ElMessage.error("文件：" + options.file.name + "上传失败，文件已存在！");
       options.onError(new UploadAjaxError("文件已存在", 401, option.method, options.action));
+      return;
     }
+    ElMessage.error("文件：" + options.file.name + "上传失败，" + response.data.message);
+    options.onError(new UploadAjaxError(response.data.message, response.data.status, option.method, options.action));
   }).catch((error) => {
     options.onError(error)
   }).finally(() => {
