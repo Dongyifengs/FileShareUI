@@ -110,7 +110,7 @@
           </el-table>
           <!-- 分页组件 -->
           <el-pagination
-              @current-change="HandleCurrentChange"
+              @current-change="handlerPageChange"
               :current-page="currentPage"
               :page-sizes="[20]"
               :page-size="20"
@@ -284,7 +284,7 @@ const parserByteSize = (byte: number): string => {
   return (byte / 1024 / 1024 / 1024 / 1024).toFixed(2) + "TB";
 }
 // 处理当前页变化
-const HandleCurrentChange = (val: number) => {
+const handlerPageChange = (val: number) => {
   currentPage.value = val;
   showAllFiles();
 };
