@@ -42,10 +42,11 @@
               <p v-else>欢迎加入文件分享站！</p>
               <!-- 用户名输入框 -->
               <label for="username" class="login-dialog-element">用户名：</label>
-              <el-input id="username" class="login-dialog-element" v-model="usernameInput" placeholder="请输入用户名" />
+              <el-input id="username" class="login-dialog-element" v-model="usernameInput" placeholder="请输入用户名"/>
               <!-- 密码输入框 -->
               <label for="password" class="login-dialog-element">密码：</label>
-              <el-input id="password" class="login-dialog-element" v-model="userPasswordInput" type="password" placeholder="请输入用户密码" />
+              <el-input id="password" class="login-dialog-element" v-model="userPasswordInput" type="password"
+                        placeholder="请输入用户密码"/>
               <div v-if="!isLoginMode" class="login-dialog-element">
                 <label for="registerType">注册类型：</label>
                 <el-select id="registerType" v-model="registerTypeInput" placeholder="注册类型">
@@ -54,15 +55,23 @@
                 </el-select>
                 <div v-if="registerTypeInput == Auth.ADMIN">
                   <label for="verifyCode" class="login-dialog-element">邀请码：</label>
-                  <el-input id="verifyCode" class="login-dialog-element" v-model="verifyCodeInput" type="password" placeholder="请输入管理员用户邀请码" />
+                  <el-input id="verifyCode" class="login-dialog-element" v-model="verifyCodeInput" type="password"
+                            placeholder="请输入管理员用户邀请码"/>
                 </div>
               </div>
               <div class="actions">
-                <van-button class="user-login-register-button" @click="userLogin" type="primary" v-if="isLoginMode">登录</van-button>
-                <van-button class="user-login-register-button" @click="userEnroll" type="primary" v-else>注册</van-button>
+                <van-button class="user-login-register-button" @click="userLogin" type="primary" v-if="isLoginMode">
+                  登录
+                </van-button>
+                <van-button class="user-login-register-button" @click="userEnroll" type="primary" v-else>注册
+                </van-button>
                 <!-- 登录按钮 -->
-                <van-button class="user-login-register-button" @click="isLoginMode = false;" type="primary" v-if="isLoginMode">切换到注册</van-button>
-                <van-button class="user-login-register-button" @click="isLoginMode = true;" type="primary" v-else>切换到登录</van-button>
+                <van-button class="user-login-register-button" @click="isLoginMode = false;" type="primary"
+                            v-if="isLoginMode">切换到注册
+                </van-button>
+                <van-button class="user-login-register-button" @click="isLoginMode = true;" type="primary" v-else>
+                  切换到登录
+                </van-button>
                 <!-- 注册按钮 -->
               </div>
             </div>
@@ -94,7 +103,8 @@
                 <p>文件ID: <span>{{ nowSelectedFileInformation.id }}</span></p>
                 <p>文件类型: <span>{{ nowSelectedFileInformation.type }}</span></p>
                 <p>文件大小: <span>{{ parserByteSize(nowSelectedFileInformation.size) }}</span></p>
-                <p title="点击复制"><a class="file-hash-a" @click="copyFullHash">文件校验值: <span>{{ shortHash(nowSelectedFileInformation.hash) }}</span></a></p>
+                <p title="点击复制"><a class="file-hash-a" @click="copyFullHash">文件校验值:
+                  <span>{{ shortHash(nowSelectedFileInformation.hash) }}</span></a></p>
                 <p>文件上传者: <span>{{ nowSelectedFileInformation.uploaderName }}</span></p>
                 <p>文件上传时间: <span>{{ nowSelectedFileInformation.uploadTime }}</span></p>
               </div>
@@ -125,7 +135,8 @@
               <template #default="scope">
                 <el-button link type="primary" @click="downloadFile(scope.row.id)">下载</el-button>
                 <el-button link type="primary" @click="handlerFileInformation(scope.row)">详情</el-button>
-                <el-button link type="danger" v-if="userAuth === Auth.ADMIN" @click="removeFile(scope.row.id)">删除</el-button>
+                <el-button link type="danger" v-if="userAuth === Auth.ADMIN" @click="removeFile(scope.row.id)">删除
+                </el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -290,7 +301,7 @@ const vantTheme = ref<"light" | "dark">("light");
 const initTheme = () => {
   const now = new Date();
   const hour = now.getHours();
-  if (hour < 7 || hour > 16){
+  if (hour < 7 || hour > 16) {
     toggleDark(true);
     vantTheme.value = "dark";
     return;
@@ -319,8 +330,8 @@ const handlerSearch = () => {
 }
 const showAllFiles = () => {
   isSearchType.value = searchInput.value !== '';
-  if (isSearchType.value){
-    search(currentPage.value, 20, searchType.value, searchInput.value).then((res) => {
+  if (isSearchType.value) {
+    search(currentPage.value, 20, searchType.value, searchInput.value.toString()).then((res) => {
       totalFileCount.value = res.data.data.total;
       pageFileData.value = res.data.data.data;
     }).catch(() => {
@@ -349,13 +360,13 @@ const parserByteSize = (byte: number): string => {
   return (byte / 1024 / 1024 / 1024 / 1024).toFixed(2) + "TB";
 }
 const shortHash = (hash: string): string => {
-  return hash.substring(0,10) + '......' + hash.substring(118,128)
+  return hash.substring(0, 10) + '......' + hash.substring(118, 128)
 }
 const copyFullHash = () => {
-  if (nowSelectedFileInformation.value){
+  if (nowSelectedFileInformation.value) {
     navigator.clipboard.writeText(nowSelectedFileInformation.value.hash);
     ElMessage.success("复制成功！");
-  }else {
+  } else {
     ElMessage.error("你是怎么点到这个按钮的？？？");
   }
 
@@ -386,11 +397,13 @@ const option = {
     {
       name: '访问量',
       type: 'line',
+      data: [1],
       smooth: true
     },
     {
       name: '下载量',
       type: 'line',
+      data: [1],
       smooth: true
     }
   ]
@@ -531,7 +544,7 @@ const userEnroll = () => {
  * 获取管理员验证码
  */
 const genVerifyCode = () => {
-  if (userAuth.value != Auth.ADMIN){
+  if (userAuth.value != Auth.ADMIN) {
     ElMessage.error("呜~你是怎么发现这个按钮的，可惜哦~不能用哦~")
     return;
   }
@@ -544,7 +557,7 @@ const genVerifyCode = () => {
  * 当搜索类型切换
  */
 const searchTypeChange = () => {
-  switch (searchType.value){
+  switch (searchType.value) {
     case SearchType.ID:
       searchInputType.value = "number";
       break;
@@ -564,12 +577,12 @@ const isLogin = computed(() => sessionStorage.getItem("authorization") != null)
  * @param uploadFile 上传的文件
  */
 const handleUploadRemove = (uploadFile: UploadFile): Awaitable<boolean> => {
-  if (uploadFile.status !== "uploading"){
+  if (uploadFile.status !== "uploading") {
     return true;
   }
   const name = uploadFile.raw?.name as string;
   const controller = abortControllers.value.get(name);
-  if (controller){
+  if (controller) {
     controller.abort("user");
     ElMessage.success("成功取消！")
     return true;
@@ -588,19 +601,19 @@ const handleUploadSuccess = (_: never, uploadFile: UploadFile): void => {
  * 上传前的预处理
  * @param rawFile 上传的文件
  */
-const handleBeforeUpload = (rawFile: UploadRawFile): boolean => {
-  if (!isLogin.value){
-    ElMessage.error("未登录，无法上传！");
-    return false;
-  }
-  if (abortControllers.value.has(rawFile.name)){
-    ElMessage.error("文件：" + rawFile.name + "上传失败，已存在同名文件正在上传")
-    return false;
-  }
+const handleBeforeUpload = (rawFile: UploadRawFile): Promise<unknown> => {
   return new Promise((resolve, reject) => {
+    if (!isLogin.value) {
+      ElMessage.error("未登录，无法上传！");
+      reject();
+    }
+    if (abortControllers.value.has(rawFile.name)) {
+      ElMessage.error("文件：" + rawFile.name + "上传失败，已存在同名文件正在上传")
+      reject();
+    }
     checkUpload(rawFile.name).then((res: AxiosResponse<Result<boolean>>) => {
       if (res.data.data) {
-        resolve();
+        resolve(res.data.data);
       } else {
         ElMessage.error("文件：" + rawFile.name + "上传失败，已存在同名文件");
         reject();
@@ -617,16 +630,16 @@ const handleUpload = (options: UploadRequestOptions): XMLHttpRequest | Promise<u
   abortControllers.value.set(options.file.name, abortController);
   let promise = upload(options, abortController);
   promise.then((response: AxiosResponse<Result<File>>) => {
-    if (response.data.status == 200){
+    if (response.data.status == 200) {
       return;
     }
-    if(response.data.status == 401){
+    if (response.data.status == 401) {
       ElMessage.error("文件：" + options.file.name + "上传失败，文件已存在！");
-      options.onError(new UploadAjaxError("文件已存在", 401, option.method, options.action));
+      options.onError(new UploadAjaxError("文件已存在", 401, options.method, options.action));
       return;
     }
     ElMessage.error("文件：" + options.file.name + "上传失败，" + response.data.message);
-    options.onError(new UploadAjaxError(response.data.message, response.data.status, option.method, options.action));
+    options.onError(new UploadAjaxError(response.data.message, response.data.status, options.method, options.action));
   }).catch((error) => {
     options.onError(error)
   }).finally(() => {
@@ -658,12 +671,12 @@ const downloadFile = (id: number) => {
  * @param id 文件id
  */
 const removeFile = (id: number) => {
-  if (userAuth.value != Auth.ADMIN){
+  if (userAuth.value != Auth.ADMIN) {
     ElMessage.error("呜~你是怎么发现这个按钮的，可惜哦~不能用哦~")
     return;
   }
   remove(id).then((res: AxiosResponse<Result<boolean>>) => {
-    if (res.data.data){
+    if (res.data.data) {
       ElMessage.success("删除成功！");
       showAllFiles()
       return;
@@ -766,9 +779,11 @@ img {
 .file-information-popover {
   margin: 20px;
 }
+
 .file-hash-a:hover {
   cursor: pointer;
 }
+
 .login-dialog-element {
   margin-top: 5px;
 }
