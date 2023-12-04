@@ -1,15 +1,16 @@
 <template>
+  <van-config-provider :theme="vantTheme"></van-config-provider>
   <div class="MobileHome">
     <!-- 页面主体部分 -->
     <div class="head">
       <!-- 头部区域 -->
       <van-cell-group inset class="inputFileName">
         <!-- 搜索框区域 -->
-        <van-field v-model="inputFileName" center clearable placeholder="请输入文件名称">
+        <van-field v-model="searchInput" center clearable placeholder="请输入文件名称">
           <!-- 文件名输入框 -->
           <template #button>
             <!-- 搜索按钮 -->
-            <van-button size="small" type="primary">搜索</van-button>
+            <van-button size="small" type="primary" @click="handlerSearch">搜索</van-button>
           </template>
         </van-field>
       </van-cell-group>
@@ -18,137 +19,330 @@
           class="userAvatar"
           width="50"
           height="50"
-          src="src/assets/UserAvatar.jpg"
+          :src="userAvatar"
           radius="5"
-          @click="toggleUserLogin"
+          @click="imgLoginBox"
       />
-      <!-- 登录弹窗 -->
-      <van-popup v-model:show="userAvatarLoginShow" round position="top" class="userLoginBox">
-        <div class="login-content">
-          <h2>登录/注册</h2>
-          <p>欢迎来到文件分享站</p>
-          <label for="userName">用户名</label>
-          <van-field id="userName" v-model="userName" center placeholder="请输入用户名"/>
+      <van-popup v-model:show="userAvatarLoginShow" round>
+        <!-- 登录/注册弹窗内容 -->
+        <div class="dialog">
+          <h2 v-if="isLoginMode">登录</h2>
+          <h2 v-else>注册</h2>
+          <p v-if="isLoginMode">欢迎回到文件分享站！</p>
+          <p v-else>欢迎加入文件分享站！</p>
           <!-- 用户名输入框 -->
-          <label for="password">密码</label>
-          <van-field id="password" v-model="userPassword" center type="password" placeholder="请输入用户密码"/>
+          <label for="username" class="login-dialog-element">用户名：</label>
+          <el-input id="username" class="login-dialog-element" v-model="usernameInput" placeholder="请输入用户名"/>
           <!-- 密码输入框 -->
+          <label for="password" class="login-dialog-element">密码：</label>
+          <el-input id="password" class="login-dialog-element" v-model="userPasswordInput" type="password"
+                    placeholder="请输入用户密码"/>
+          <div v-if="!isLoginMode" class="login-dialog-element">
+            <label for="registerType">注册类型：</label>
+            <el-select id="registerType" v-model="registerTypeInput" placeholder="注册类型">
+              <el-option key="1" label="普通用户" :value="Auth.USER"/>
+              <el-option key="2" label="管理员" :value="Auth.ADMIN"/>
+            </el-select>
+            <div v-if="registerTypeInput == Auth.ADMIN">
+              <label for="verifyCode" class="login-dialog-element">邀请码：</label>
+              <el-input id="verifyCode" class="login-dialog-element" v-model="verifyCodeInput" type="password"
+                        placeholder="请输入管理员用户邀请码"/>
+            </div>
+          </div>
           <div class="actions">
-            <van-button class="userLoginButton" @click="userLogin" type="primary">登录</van-button>
+            <van-button class="user-login-register-button" @click="userLogin" type="primary" v-if="isLoginMode">
+              登录
+            </van-button>
+            <van-button class="user-login-register-button" @click="userEnroll" type="primary" v-else>注册
+            </van-button>
             <!-- 登录按钮 -->
-            <van-button class="userLoginButton" @click="userEnroll" type="primary">注册后登录</van-button>
+            <van-button class="user-login-register-button" @click="isLoginMode = false;" type="primary"
+                        v-if="isLoginMode">切换到注册
+            </van-button>
+            <van-button class="user-login-register-button" @click="isLoginMode = true;" type="primary" v-else>
+              切换到登录
+            </van-button>
             <!-- 注册按钮 -->
           </div>
         </div>
       </van-popup>
-
+      <!-- 属性弹窗 -->
       <van-popup v-model:show="userAvatarLoginShowTools" round position="top" class="userLoginBox">
-        <!-- 登录弹窗 -->
-        <div class="login-content">
+        <div class="dialog">
           <h2>个人中心</h2>
           <h3>用户属性:</h3>
           <div>
-            <p class="userNameId">用户ID: {{ userNameToolsId }} </p>
-            <p class="userNameName">用户名称: {{ userNameToolsName }}</p>
-            <p class="userNameType">用户类型:
-              <span v-if="userNameToolsAuth === 'admin'">管理员</span>
-              <span v-else-if="userNameToolsAuth === 'user'">普通用户</span>
+            <p>用户名称 {{ username }}</p>
+            <p>用户类型:
+              <span v-if="userAuth === Auth.ADMIN">管理员</span>
+              <span v-else-if="userAuth === Auth.USER">普通用户</span>
               <span v-else>未登录</span>
             </p>
           </div>
-          <h3>功能区:</h3>
+          <h3>功能区</h3>
           <div class="uploadFile">
             <el-upload
-                v-model:file-list="fileList"
-                class="upload"
-                action="http://127.0.0.1:8081/api/file/upload"
+                class="upload-demo"
                 multiple
-                :on-preview="handlePreview"
-                :on-remove="handleRemove"
-                :before-remove="beforeRemove"
-                :limit="3"
-                :on-exceed="handleExceed"
+                :http-request="handleUpload"
+                :before-remove="handleUploadRemove"
+                :on-success="handleUploadSuccess"
+                :before-upload="handleBeforeUpload"
             >
               <el-button type="primary">点击上传文件</el-button>
+              <el-button type="primary" @click="genVerifyCode" v-if="userAuth == Auth.ADMIN">获取邀请码</el-button>
               <el-button type="primary" @click="logout">退出登录</el-button>
               <template #tip>
                 <div class="el-upload__tip">
-                  最大文件限制大小:10GB
+                  最大文件限制大小:20GB
                 </div>
               </template>
             </el-upload>
+
           </div>
+        </div>
+      </van-popup>
+      <!-- 文件详情 -->
+      <van-popup v-model:show="showFileInformation" round>
+        <div class="file-information-popover" v-if="nowSelectedFileInformation">
+          <h2>文件名称:<br><span>{{ nowSelectedFileInformation.name }}</span></h2>
+          <div>
+            <p>文件ID: <span>{{ nowSelectedFileInformation.id }}</span></p>
+            <p>文件类型: <span>{{ nowSelectedFileInformation.type }}</span></p>
+            <p>文件大小: <span>{{ parserByteSize(nowSelectedFileInformation.size) }}</span></p>
+            <p title="点击复制"><a class="file-hash-a" @click="copyFullHash">文件校验值:
+              <span>{{ shortHash(nowSelectedFileInformation.hash) }}</span></a></p>
+            <p>文件上传者: <span>{{ nowSelectedFileInformation.uploaderName }}</span></p>
+            <p>文件上传时间: <span>{{ nowSelectedFileInformation.uploadTime }}</span></p>
+          </div>
+        </div>
+        <div class="file-information-popover" v-else>
+          <h2>emm，咱就是说，这个分享站好像有点bug，这个东西好像展示不出来捏:&lt;</h2>
         </div>
       </van-popup>
     </div>
     <div class="fileLiteBox">
-      <el-table :data="nowFileData" border style="width: 100%">
-        <el-table-column prop="id" label="ID" width="60"/>
-        <el-table-column prop="name" label="文件名" width="200"/>
-        <el-table-column prop="type" label="文件格式" width="150"/>
-        <el-table-column prop="size" label="文件大小" width="100"/>
-        <el-table-column prop="uploaderName" label="上传者" width="100"/>
-        <el-table-column fixed="right" label="操作" width="100">
+      <el-table ref="fileListTable" :data="pageFileData" class="files-data-table" border stripe>
+        <el-table-column prop="id" label="ID" width="70"/>
+        <el-table-column prop="name" label="文件名称" width="650"/>
+        <el-table-column prop="type" label="文件格式" width="120"/>
+        <el-table-column label="文件大小" width="120">
+          <template #default="scope">{{ parserByteSize(scope.row.size) }}</template>
+        </el-table-column>
+        <el-table-column prop="uploaderName" label="上传者" width="120"/>
+        <el-table-column fixed="right" label="操作" :width="fileOptionRowWidth">
+          <!-- 操作列模板 -->
           <template #default="scope">
-            <!-- 列表操作按钮 -->
-            <el-button link type="primary" size="small" @click="handleShowDetail();">
-              <!-- 显示详细信息按钮 -->
-              详细
-            </el-button>
-            <el-button link type="primary" size="small" @click="handleDownload();">下载</el-button>
-            <!-- 下载按钮 -->
-            <el-button link type="primary" size="small" @click="handleDelete();" v-if="isAdmin">删除
-              <!-- 删除按钮，仅管理员可见 -->
+            <el-button link type="primary" @click="downloadFile(scope.row.id)">下载</el-button>
+            <el-button link type="primary" @click="handlerFileInformation(scope.row)">详情</el-button>
+            <el-button link type="danger" v-if="userAuth === Auth.ADMIN" @click="removeFile(scope.row.id)">删除
             </el-button>
           </template>
         </el-table-column>
       </el-table>
+      <!-- 分页组件 -->
       <div class="pagination-container">
-        <!-- 分页控件容器 -->
         <el-pagination
-            @current-change="fetchFiles"
+            @current-change="handlerPageChange"
             :current-page="currentPage"
-            :page-size="pageSize"
-            :total="totalFiles"
-            layout="prev, pager, next">
-        </el-pagination>
+            :page-sizes="[19]"
+            :page-size="19"
+            layout="prev, pager, next"
+            :total="totalFileCount"
+            class="pagination"
+        />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import {onMounted, ref} from "vue";
-import {ElMessage} from "element-plus";
-import 'element-plus/es/components/message/style/css';
-import {login, register, getAllFiles, Result} from '../api/Requester';
-import {User} from "../entities/User";
+import 'element-plus/theme-chalk/dark/css-vars.css'
+import {computed, onBeforeMount, onMounted, ref} from 'vue';
+import {useDark, useToggle} from "@vueuse/core"
+import {GridComponent, LegendComponent} from 'echarts/components';
+import {LineChart} from 'echarts/charts';
+import {UniversalTransition} from 'echarts/features';
+import {CanvasRenderer} from 'echarts/renderers';
+import * as echarts from 'echarts/core';
+import {
+  baseUrl,
+  checkUpload,
+  generatorVerifyCode,
+  getAllFiles,
+  getLink,
+  register,
+  remove,
+  Result,
+  search,
+  upload
+} from "../api/Requester.ts";
+import {login} from '../api/Requester';
 import {AxiosResponse} from "axios";
-import {Auth} from "../entities/Auth";
-import {File} from "../entities/File";
+import {User} from "../entities/User.ts";
+import {UploadFile, UploadRawFile, UploadRequestOptions, ElMessage} from "element-plus";
+import {Auth} from "../entities/Auth.ts";
+import {File} from "../entities/File.ts";
+import {Awaitable} from "element-plus/es/utils";
+import {UploadAjaxError} from "element-plus/es/components/upload/src/ajax";
+import {SearchType} from "../entities/SearchType.ts";
 
-// TODO: 头部组件定义变量
-const inputFileName = ref<string>('');
-const userAvatarLoginShow = ref<boolean>(false);
-const userAvatarLoginShowTools = ref<boolean>(false);
-const userName = ref<string>("");
-const userPassword = ref<string>("");
-const isAdmin = ref<boolean>(false); // 是否是管理员
+echarts.use([GridComponent, LineChart, CanvasRenderer, UniversalTransition, LegendComponent]);
 
 // TODO: 用户属性
-const userNameToolsId = ref<number>(0);
-const userNameToolsName = ref<string>("未登录");
-const userNameToolsAuth = ref<string>("未登录");
+const username = computed(() => {
+  const username = sessionStorage.getItem("username");
+  if (username) {
+    return username;
+  }
+  return "未登录"
+})
+const userAuth = computed(() => {
+  const authStorage = sessionStorage.getItem("auth");
+  switch (authStorage) {
+    case "admin":
+      return Auth.ADMIN;
+    case "user":
+      return Auth.USER;
+    default:
+      return "未登录";
+  }
+})
 
-// TODO: 分页属性配置
+// TODO: 头部组件
+// 搜索类型
+const searchType = ref<SearchType>(SearchType.FILE_NAME);
+const searchInput = ref<string>("");
+// 用户头像
+const userAvatar = 'src/assets/UserAvatar.jpg'
+// 用户账号密码
+const usernameInput = ref<string>('');
+const userPasswordInput = ref<string>('');
+// 用户登录弹窗
+const userAvatarLoginShow = ref<boolean>(false);
+// 用户属性弹窗
+const userAvatarLoginShowTools = ref<boolean>(false);
+// 用户登录/注册窗口模式
+const isLoginMode = ref<boolean>(true);
+// 注册类型
+const registerTypeInput = ref<Auth>(Auth.USER);
+// 邀请码
+const verifyCodeInput = ref<string>("");
+// 展示文件详细信息
+const nowSelectedFileInformation = ref<File>();
+// 下载文件
+const handlerFileInformation = (file: File) => {
+  showFileInformation.value = true;
+  nowSelectedFileInformation.value = file;
+}
+// 删除文件
+const downloadFile = (id: number) => {
+  getLink(id).then((res: AxiosResponse<Result<string>>) => {
+    window.open(baseUrl + "/api/file/download/" + res.data.data);
+  })
+}
+const removeFile = (id: number) => {
+  if (userAuth.value != Auth.ADMIN) {
+    ElMessage.error("呜~你是怎么发现这个按钮的，可惜哦~不能用哦~")
+    return;
+  }
+  remove(id).then((res: AxiosResponse<Result<boolean>>) => {
+    if (res.data.data) {
+      ElMessage.success("删除成功！");
+      showAllFiles()
+      return;
+    }
+    ElMessage.error("删除失败，请查看后台日志处理！");
+  });
+}
+// 主题切换
+const isDark = useDark()
+const toggleDark = useToggle(isDark);
+const vantTheme = ref<"light" | "dark">("light");
+// 自动主题
+const initTheme = () => {
+  const now = new Date();
+  const hour = now.getHours();
+  if (hour < 7 || hour > 17) {
+    toggleDark(true);
+    vantTheme.value = "dark";
+    return;
+  }
+  toggleDark(false);
+}
+
+// TODO: 文件列表
+const showFileInformation = ref<boolean>(false);
+// admin 与 user 的UI变动
+const fileOptionRowWidth = computed(() => {
+  switch (userAuth.value) {
+    case Auth.ADMIN:
+      return 155;
+    default:
+      return 110;
+  }
+});
+// 分页相关数据
 const currentPage = ref<number>(1);
-const pageSize = ref<number>(18);
-const nowFileData = ref<File[]>([]);
-const totalFiles = ref<number>(0);
+const totalFileCount = ref<number>(0);
+const pageFileData = ref<File[]>([]);
+const isSearchType = ref<boolean>(false);
+const handlerSearch = () => {
+  isSearchType.value = true;
+  showAllFiles();
+}
+const showAllFiles = () => {
+  if (isSearchType.value) {
+    search(currentPage.value, 19, searchType.value, searchInput.value).then((res) => {
+      totalFileCount.value = res.data.data.total;
+      pageFileData.value = res.data.data.data;
+    }).catch(() => {
+      ElMessage.error("搜索失败！");
+    })
+    return;
+  }
+  getAllFiles(currentPage.value, 19).then((res) => {
+    totalFileCount.value = res.data.data.total;
+    pageFileData.value = res.data.data.data;
+  })
+}
+const parserByteSize = (byte: number): string => {
+  if (byte < 1024) {
+    return byte + 'B';
+  }
+  if (byte < 1024 * 1024) {
+    return (byte / 1024).toFixed(2) + "KB";
+  }
+  if (byte < 1024 * 1024 * 1024) {
+    return (byte / 1024 / 1024).toFixed(2) + "MB";
+  }
+  if (byte < 1024 * 1024 * 1024 * 1024) {
+    return (byte / 1024 / 1024 / 1024).toFixed(2) + "GB";
+  }
+  return (byte / 1024 / 1024 / 1024 / 1024).toFixed(2) + "TB";
+}
+const shortHash = (hash: string): string => {
+  return hash.substring(0, 10) + '......' + hash.substring(118, 128)
+}
+const copyFullHash = () => {
+  if (nowSelectedFileInformation.value) {
+    navigator.clipboard.writeText(nowSelectedFileInformation.value.hash);
+    ElMessage.success("复制成功！");
+  } else {
+    ElMessage.error("你是怎么点到这个按钮的？？？");
+  }
 
-// TODO: 用户登录弹窗
-const toggleUserLogin = () => {
-  if (sessionStorage.getItem("authorization")) {
+}
+// 处理当前页变化
+const handlerPageChange = (val: number) => {
+  currentPage.value = val;
+  showAllFiles();
+};
+
+// TODO: 用户点击事件
+// 点击用户头像弹出登录窗口
+const imgLoginBox = () => {
+  if (isLogin.value) {
     // 如果本地存储中有用户信息，即用户已登录
     // 显示用户信息窗口并隐藏登录窗口
     userAvatarLoginShowTools.value = true;
@@ -158,38 +352,27 @@ const toggleUserLogin = () => {
     userAvatarLoginShow.value = !userAvatarLoginShow.value;
     userAvatarLoginShowTools.value = false;
   }
-};
-
-// TODO: 用户配置
-const logout = () => {
-  // 提醒弹窗
-  ElMessage.success("退出成功!")
-  // 清除本地存储中的用户信息
-  sessionStorage.clear();
-  userAvatarLoginShowTools.value = false;
-  window.location.reload()
-};
-
-// TODO: 用户登录接口
+}
+// 点击登录按钮
 const userLogin = () => {
   // 清理本地cookie
   sessionStorage.clear();
   // 用户登录函数
-  if (userName.value == "" || userPassword.value == "") {
+  if (usernameInput.value == "" || userPasswordInput.value == "") {
     ElMessage.error("用户名密码不能为空");
     return;
   }
   // 调用登录接口
-  login(userName.value, userPassword.value)
+  login(usernameInput.value, userPasswordInput.value)
       .then((res: AxiosResponse<Result<User>>) => {
         // 发送登录请求
         if (res.data.status == 200) {
-          const user = res.data.data;
-          sessionStorage.setItem("username", user.name);
-          sessionStorage.setItem("auth", user.auth.toString());
+          const username = res.data.data.name;
+          sessionStorage.setItem("username", username);
+          sessionStorage.setItem("auth", res.data.data.auth.toString());
           // 延迟一段时间后显示用户信息窗口
           setTimeout(() => {
-            toggleUserLogin();
+            imgLoginBox();
           }, 1000); // 1000毫秒（1秒）延迟示例
           ElMessage.success("登录成功!");
           window.location.reload()
@@ -198,15 +381,23 @@ const userLogin = () => {
         }
       })
 };
-
-// TODO: 用户注册接口
+// 注销登陆
+const logout = () => {
+  // 提醒弹窗
+  ElMessage.success("退出成功!")
+  // 清除本地存储中的用户信息
+  sessionStorage.clear();
+  userAvatarLoginShowTools.value = false;
+  window.location.reload()
+};
+// 用户注册并登录接口
 const userEnroll = () => {
   // 用户注册函数
-  if (userName.value == '' || userPassword.value == '') {
+  if (usernameInput.value == '' || userPasswordInput.value == '') {
     ElMessage.error("用户名密码不能为空")
     return;
   }
-  register(userName.value, userPassword.value, Auth.USER).then((res) => {
+  register(usernameInput.value, userPasswordInput.value, registerTypeInput.value, verifyCodeInput.value).then((res) => {
     switch (res.data.status) {
       case 251:
         ElMessage.error("邀请码错误！");
@@ -215,48 +406,122 @@ const userEnroll = () => {
         ElMessage.error("存在同名用户！");
         break;
       case 200:
-        ElMessage.success("注册成功");
         sessionStorage.setItem("username", res.data.data.name);
         sessionStorage.setItem("auth", res.data.data.auth.toString());
+        setTimeout(() => {
+          imgLoginBox();
+        }, 1000);
+        ElMessage.success("注册成功");
+        window.location.reload()
         break;
       default:
         ElMessage.error("无法注册！");
     }
   });
 }
-
-// TODO: 获取列表文件接口
-const fetchFiles = (current?: number) => {
-  if (current) {
-    currentPage.value = current;
+/**
+ * 获取管理员验证码
+ */
+const genVerifyCode = () => {
+  if (userAuth.value != Auth.ADMIN) {
+    ElMessage.error("呜~你是怎么发现这个按钮的，可惜哦~不能用哦~")
+    return;
   }
-  getAllFiles(currentPage.value, pageSize.value).then((res) => {
-    nowFileData.value = res.data.data.data;
-    totalFiles.value = res.data.data.total;
+  generatorVerifyCode().then((res: AxiosResponse<Result<string>>) => {
+    ElMessage.success("已成功获取到邀请码：" + res.data.data + "，已复制到剪切板，有效期：15分钟");
+    navigator.clipboard.writeText(res.data.data);
   })
 }
-
-// TODO: 上传文件
-
-// TODO: 查看文件属性
-const handleShowDetail = () => {
-  console.log("查看文件属性接口");
+const abortControllers = ref<Map<string, AbortController>>(new Map());
+// 是否登录
+const isLogin = computed(() => sessionStorage.getItem("authorization") != null)
+/**
+ * 处理上传任务删除
+ * @param uploadFile 上传的文件
+ */
+const handleUploadRemove = (uploadFile: UploadFile): Awaitable<boolean> => {
+  if (uploadFile.status !== "uploading") {
+    return true;
+  }
+  const name = uploadFile.raw?.name as string;
+  const controller = abortControllers.value.get(name);
+  if (controller) {
+    controller.abort("user");
+    ElMessage.success("成功取消！")
+    return true;
+  }
+  return false;
+}
+/**
+ * 处理上传成功
+ * @param _ 无用变量
+ * @param uploadFile 上传的文件
+ */
+const handleUploadSuccess = (_: never, uploadFile: UploadFile): void => {
+  ElMessage.success("文件" + uploadFile.raw?.name + "上传成功！");
+}
+/**
+ * 上传前的预处理
+ * @param rawFile 上传的文件
+ */
+const handleBeforeUpload = (rawFile: UploadRawFile): Promise<unknown> => {
+  return new Promise((resolve, reject) => {
+    if (!isLogin.value) {
+      ElMessage.error("未登录，无法上传！");
+      reject();
+    }
+    if (abortControllers.value.has(rawFile.name)) {
+      ElMessage.error("文件：" + rawFile.name + "上传失败，已存在同名文件正在上传")
+      reject();
+    }
+    checkUpload(rawFile.name).then((res: AxiosResponse<Result<boolean>>) => {
+      if (res.data.data) {
+        resolve(res.data.data);
+      } else {
+        ElMessage.error("文件：" + rawFile.name + "上传失败，已存在同名文件");
+        reject();
+      }
+    })
+  });
+}
+/**
+ * 处理上传请求
+ * @param options 上传设置（包括上传的文件等）
+ */
+const handleUpload = (options: UploadRequestOptions): XMLHttpRequest | Promise<unknown> => {
+  const abortController = new AbortController();
+  abortControllers.value.set(options.file.name, abortController);
+  let promise = upload(options, abortController);
+  promise.then((response: AxiosResponse<Result<File>>) => {
+    if (response.data.status == 200) {
+      return;
+    }
+    if (response.data.status == 401) {
+      ElMessage.error("文件：" + options.file.name + "上传失败，文件已存在！");
+      options.onError(new UploadAjaxError("文件已存在", 401, options.method, options.action));
+      return;
+    }
+    ElMessage.error("文件：" + options.file.name + "上传失败，" + response.data.message);
+    options.onError(new UploadAjaxError(response.data.message, response.data.status, options.method, options.action));
+  }).catch((error) => {
+    options.onError(error)
+  }).finally(() => {
+    abortControllers.value.delete(options.file.name);
+  });
+  return promise;
 }
 
-// TODO: 文件下载
-const handleDownload = () => {
-  console.log("download");
-}
 
-// TODO: 删除文件
-const handleDelete = () => {
-  console.log("delete");
-}
-
-// TODO: 实时更新
-onMounted(() => {
-  fetchFiles();
+// TODO: 页面主题
+onBeforeMount(() => {
+  initTheme();
 })
+
+// TODO: onMounted
+onMounted(() => {
+  showAllFiles();
+})
+
 </script>
 
 <style scoped>
@@ -264,7 +529,6 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #f0f0f0; /* 头部样式，包括布局和背景颜色 */
 }
 
 .inputFileName {
@@ -281,7 +545,6 @@ onMounted(() => {
 }
 
 .userLoginBox {
-  background-color: #fff;
   border-radius: 10px;
   padding: 20px; /* 登录弹窗样式 */
 }
@@ -320,5 +583,13 @@ onMounted(() => {
   align-items: center; /* 垂直居中对齐 */
   text-align: center; /* 文本水平居中对齐 */
   margin-top: 10px;
+}
+
+.dialog {
+  margin: 20px;
+}
+
+.file-information-popover {
+  margin: 20px;
 }
 </style>
