@@ -1,11 +1,12 @@
 <template>
+  <van-config-provider :theme="vantTheme"></van-config-provider>
   <div class="MobileHome">
     <!-- 页面主体部分 -->
     <div class="head">
       <!-- 头部区域 -->
       <van-cell-group inset class="inputFileName">
         <!-- 搜索框区域 -->
-        <van-field v-model="inputFileName" center clearable placeholder="请输入文件名称">
+        <van-field v-model="searchInput" center clearable placeholder="请输入文件名称">
           <!-- 文件名输入框 -->
           <template #button>
             <!-- 搜索按钮 -->
@@ -71,18 +72,17 @@
           <h2>个人中心</h2>
           <h3>用户属性:</h3>
           <div>
-            <p>用户名称: {{ username }}</p>
+            <p>用户名称 {{ username }}</p>
             <p>用户类型:
               <span v-if="userAuth === Auth.ADMIN">管理员</span>
               <span v-else-if="userAuth === Auth.USER">普通用户</span>
               <span v-else>未登录</span>
             </p>
           </div>
-          <h3>功能区:</h3>
+          <h3>功能区</h3>
           <div class="uploadFile">
             <el-upload
                 class="upload-demo"
-                drag
                 multiple
                 :http-request="handleUpload"
                 :before-remove="handleUploadRemove"
@@ -94,11 +94,30 @@
               <el-button type="primary" @click="logout">退出登录</el-button>
               <template #tip>
                 <div class="el-upload__tip">
-                  最大文件限制大小:10GB
+                  最大文件限制大小:20GB
                 </div>
               </template>
             </el-upload>
+
           </div>
+        </div>
+      </van-popup>
+      <!-- 文件详情 -->
+      <van-popup v-model:show="showFileInformation" round>
+        <div class="file-information-popover" v-if="nowSelectedFileInformation">
+          <h2>文件名称:<br><span>{{ nowSelectedFileInformation.name }}</span></h2>
+          <div>
+            <p>文件ID: <span>{{ nowSelectedFileInformation.id }}</span></p>
+            <p>文件类型: <span>{{ nowSelectedFileInformation.type }}</span></p>
+            <p>文件大小: <span>{{ parserByteSize(nowSelectedFileInformation.size) }}</span></p>
+            <p title="点击复制"><a class="file-hash-a" @click="copyFullHash">文件校验值:
+              <span>{{ shortHash(nowSelectedFileInformation.hash) }}</span></a></p>
+            <p>文件上传者: <span>{{ nowSelectedFileInformation.uploaderName }}</span></p>
+            <p>文件上传时间: <span>{{ nowSelectedFileInformation.uploadTime }}</span></p>
+          </div>
+        </div>
+        <div class="file-information-popover" v-else>
+          <h2>emm，咱就是说，这个分享站好像有点bug，这个东西好像展示不出来捏:&lt;</h2>
         </div>
       </van-popup>
       <!-- 文件详情 -->
@@ -122,13 +141,13 @@
     </div>
     <div class="fileLiteBox">
       <el-table ref="fileListTable" :data="pageFileData" class="files-data-table" border stripe>
-        <el-table-column prop="id" label="ID" width="100"/>
+        <el-table-column prop="id" label="ID" width="70"/>
         <el-table-column prop="name" label="文件名称" width="650"/>
-        <el-table-column prop="type" label="文件格式" width="150"/>
-        <el-table-column label="文件大小" width="160">
+        <el-table-column prop="type" label="文件格式" width="120"/>
+        <el-table-column label="文件大小" width="120">
           <template #default="scope">{{ parserByteSize(scope.row.size) }}</template>
         </el-table-column>
-        <el-table-column prop="uploaderName" label="上传者" width="150"/>
+        <el-table-column prop="uploaderName" label="上传者" width="120"/>
         <el-table-column fixed="right" label="操作" :width="fileOptionRowWidth">
           <!-- 操作列模板 -->
           <template #default="scope">
@@ -144,8 +163,8 @@
         <el-pagination
             @current-change="handlerPageChange"
             :current-page="currentPage"
-            :page-sizes="[18]"
-            :page-size="18"
+            :page-sizes="[19]"
+            :page-size="19"
             layout="prev, pager, next"
             :total="totalFileCount"
             class="pagination"
@@ -179,7 +198,7 @@ import {
 import {login} from '../api/Requester';
 import {AxiosResponse} from "axios";
 import {User} from "../entities/User.ts";
-import {ElMessage, UploadFile, UploadRawFile, UploadRequestOptions} from "element-plus";
+import {UploadFile, UploadRawFile, UploadRequestOptions, ElMessage} from "element-plus";
 import {Auth} from "../entities/Auth.ts";
 import {File} from "../entities/File.ts";
 import {Awaitable} from "element-plus/es/utils";
@@ -209,11 +228,9 @@ const userAuth = computed(() => {
 })
 
 // TODO: 头部组件
-// 搜索输入框
-const inputFileName = ref<string>('');
 // 搜索类型
 const searchType = ref<SearchType>(SearchType.FILE_NAME);
-const searchInput = ref<string>("text");
+const searchInput = ref<string>("");
 // 用户头像
 const userAvatar = 'src/assets/UserAvatar.jpg'
 // 用户账号密码
@@ -224,13 +241,13 @@ const userAvatarLoginShow = ref<boolean>(false);
 // 用户属性弹窗
 const userAvatarLoginShowTools = ref<boolean>(false);
 // 用户登录/注册窗口模式
-const isLoginMode = ref<boolean>(false);
+const isLoginMode = ref<boolean>(true);
 // 注册类型
 const registerTypeInput = ref<Auth>(Auth.USER);
 // 邀请码
 const verifyCodeInput = ref<string>("");
 // 展示文件详细信息
-const nowSelectedFileInformation =ref<File>();
+const nowSelectedFileInformation = ref<File>();
 // 下载文件
 const handlerFileInformation = (file: File) => {
   showFileInformation.value = true;
@@ -257,16 +274,16 @@ const removeFile = (id: number) => {
   });
 }
 // 主题切换
-const isDark = useDark();
+const isDark = useDark()
 const toggleDark = useToggle(isDark);
 const vantTheme = ref<"light" | "dark">("light");
-// 自动主题切换
+// 自动主题
 const initTheme = () => {
   const now = new Date();
   const hour = now.getHours();
-  if (hour < 7 || hour > 16) {
+  if (hour < 7 || hour > 17) {
     toggleDark(true);
-    vantTheme.value = "dark"
+    vantTheme.value = "dark";
     return;
   }
   toggleDark(false);
@@ -278,7 +295,7 @@ const showFileInformation = ref<boolean>(false);
 const fileOptionRowWidth = computed(() => {
   switch (userAuth.value) {
     case Auth.ADMIN:
-      return 160;
+      return 155;
     default:
       return 110;
   }
@@ -294,7 +311,7 @@ const handlerSearch = () => {
 }
 const showAllFiles = () => {
   if (isSearchType.value) {
-    search(currentPage.value, 20, searchType.value, searchInput.value.toString()).then((res) => {
+    search(currentPage.value, 19, searchType.value, searchInput.value).then((res) => {
       totalFileCount.value = res.data.data.total;
       pageFileData.value = res.data.data.data;
     }).catch(() => {
@@ -302,7 +319,7 @@ const showAllFiles = () => {
     })
     return;
   }
-  getAllFiles(currentPage.value, 20).then((res) => {
+  getAllFiles(currentPage.value, 19).then((res) => {
     totalFileCount.value = res.data.data.total;
     pageFileData.value = res.data.data.data;
   })
@@ -512,7 +529,6 @@ const handleUpload = (options: UploadRequestOptions): XMLHttpRequest | Promise<u
   return promise;
 }
 
-
 // TODO: 页面主题
 onBeforeMount(() => {
   initTheme();
@@ -530,7 +546,6 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #f0f0f0; /* 头部样式，包括布局和背景颜色 */
 }
 
 .inputFileName {
@@ -547,7 +562,6 @@ onMounted(() => {
 }
 
 .userLoginBox {
-  background-color: #fff;
   border-radius: 10px;
   padding: 20px; /* 登录弹窗样式 */
 }
@@ -586,5 +600,13 @@ onMounted(() => {
   align-items: center; /* 垂直居中对齐 */
   text-align: center; /* 文本水平居中对齐 */
   margin-top: 10px;
+}
+
+.dialog {
+  margin: 20px;
+}
+
+.file-information-popover {
+  margin: 20px;
 }
 </style>
