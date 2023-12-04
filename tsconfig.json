@@ -10,9 +10,10 @@
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
+    "isolatedModules": false,
+    "noEmit": false,
     "jsx": "preserve",
+    "outDir": "dist",
 
     /* Linting */
     "strict": true,
@@ -25,7 +26,8 @@
     "src/**/*.d.ts",
     "src/**/*.tsx",
     "src/**/*.vue",
-    "auto-imports.d.ts"
+    "auto-imports.d.ts",
+    "electron/*.ts"
   ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
