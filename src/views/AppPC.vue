@@ -13,7 +13,7 @@
             <el-input :type="searchInputType" v-model="searchInput" placeholder="请输入要搜索的内容">
               <!-- 选择下拉框 -->
               <template #prepend>
-                <el-select @change="searchTypeChange" v-model="searchType" style="width: 100px">
+                <el-select @change="searchTypeChange" v-model="searchType" style="width: 130px">
                   <el-option label="名字" :value="SearchType.FILE_NAME"/>
                   <el-option label="ID" :value="SearchType.ID"/>
                   <el-option label="上传者" :value="SearchType.UPLOADER"/>
@@ -756,10 +756,7 @@ img {
 
 .dialog {
   width: 45vh;
-  height: max-content;
   margin: 20px;
-  top: 50%;
-  left: 50%;
 }
 
 .user-login-register-button {
