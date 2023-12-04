@@ -24,7 +24,9 @@ export default defineConfig({
         }),
         Components({
             resolvers: [
-                ElementPlusResolver(),
+                ElementPlusResolver({
+                    importStyle: "css", // 确保样式也被自动导入
+                }),
                 VantResolver(),
             ],
         }),

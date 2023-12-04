@@ -11,7 +11,7 @@ const onInitOrResize = () => {
   }
 }
 onMounted(() => {
-  window.onresize = onInitOrResize;
+  window.addEventListener("resize", onInitOrResize);
   onInitOrResize();
 })
 </script>

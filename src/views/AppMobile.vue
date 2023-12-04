@@ -120,6 +120,24 @@
           <h2>emm，咱就是说，这个分享站好像有点bug，这个东西好像展示不出来捏:&lt;</h2>
         </div>
       </van-popup>
+      <!-- 文件详情 -->
+      <van-popup v-model:show="showFileInformation" round>
+        <div class="file-information-popover" v-if="nowSelectedFileInformation">
+          <h2>文件名称:<span>{{ nowSelectedFileInformation.name }}</span></h2>
+          <div>
+            <p>文件ID: <span>{{ nowSelectedFileInformation.id }}</span></p>
+            <p>文件类型: <span>{{ nowSelectedFileInformation.type }}</span></p>
+            <p>文件大小: <span>{{ parserByteSize(nowSelectedFileInformation.size) }}</span></p>
+            <p title="点击复制"><a class="file-hash-a" @click="copyFullHash">文件校验值:
+              <span>{{ shortHash(nowSelectedFileInformation.hash) }}</span></a></p>
+            <p>文件上传者: <span>{{ nowSelectedFileInformation.uploaderName }}</span></p>
+            <p>文件上传时间: <span>{{ nowSelectedFileInformation.uploadTime }}</span></p>
+          </div>
+        </div>
+        <div class="file-information-popover" v-else>
+          <h2>emm，咱就是说，这个分享站好像有点bug，这个东西好像展示不出来捏:&lt;</h2>
+        </div>
+      </van-popup>
     </div>
     <div class="fileLiteBox">
       <el-table ref="fileListTable" :data="pageFileData" class="files-data-table" border stripe>
@@ -510,7 +528,6 @@ const handleUpload = (options: UploadRequestOptions): XMLHttpRequest | Promise<u
   });
   return promise;
 }
-
 
 // TODO: 页面主题
 onBeforeMount(() => {
