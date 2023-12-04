@@ -11,10 +11,10 @@ export default defineConfig({
     server: {
         host: "0.0.0.0",
         port: 5173,
-/*        https: {
+        https: {
             key: readFileSync("keys/agent2-key.pem"),
             cert: readFileSync("keys/agent2-cert.pem"),
-        }*/
+        }
     },
     plugins: [
         AutoImport({
@@ -24,7 +24,9 @@ export default defineConfig({
         }),
         Components({
             resolvers: [
-                ElementPlusResolver(),
+                ElementPlusResolver({
+                    importStyle: "css", // 确保样式也被自动导入
+                }),
                 VantResolver(),
             ],
         }),
