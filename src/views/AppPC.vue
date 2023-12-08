@@ -301,7 +301,7 @@ const vantTheme = ref<"light" | "dark">("light");
 const initTheme = () => {
   const now = new Date();
   const hour = now.getHours();
-  if (hour < 7 || hour > 16) {
+  if (hour < 7 || hour > 17) {
     toggleDark(true);
     vantTheme.value = "dark";
     return;
