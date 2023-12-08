@@ -277,7 +277,7 @@ const searchInput = ref<string | number>('');
 // 搜索类型
 const searchType = ref<SearchType>(SearchType.FILE_NAME);
 // 用户头像
-const userAvatar = 'src/assets/userAvatar.jpg';
+const userAvatar = '/UserAvatar.jpg';
 // 用户名
 const usernameInput = ref<string>("");
 const userPasswordInput = ref<string>("");

@@ -24,3 +24,5 @@ dist-ssr
 *.sw?
 
 /keys
+/dist
+dist.zip

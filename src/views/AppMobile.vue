@@ -228,7 +228,7 @@ const userAuth = computed(() => {
 const searchType = ref<SearchType>(SearchType.FILE_NAME);
 const searchInput = ref<string>("");
 // 用户头像
-const userAvatar = 'src/assets/UserAvatar.jpg'
+const userAvatar = 'UserAvatar.jpg'
 // 用户账号密码
 const usernameInput = ref<string>('');
 const userPasswordInput = ref<string>('');

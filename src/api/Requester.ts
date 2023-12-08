@@ -8,7 +8,7 @@ import {File} from "../entities/File";
 import {SearchType} from "../entities/SearchType.ts";
 import {AccessInformation} from "../entities/AccessInformation.ts";
 
-export const baseUrl = 'http://localhost:8081';
+export const baseUrl = '';
 
 export interface Result<T> {
     data: T;
