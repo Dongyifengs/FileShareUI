@@ -23,7 +23,7 @@
           radius="5"
           @click="imgLoginBox"
       />
-      <van-popup v-model:show="userAvatarLoginShow" round>
+      <van-popup v-model:show="userAvatarLoginShow" round position="top">
         <!-- 登录/注册弹窗内容 -->
         <div class="dialog">
           <h2 v-if="isLoginMode">登录</h2>
@@ -81,24 +81,20 @@
           </div>
           <h3>功能区</h3>
           <div class="uploadFile">
-            <el-upload
-                class="upload-demo"
-                multiple
-                :http-request="handleUpload"
-                :before-remove="handleUploadRemove"
-                :on-success="handleUploadSuccess"
-                :before-upload="handleBeforeUpload"
-            >
-              <el-button type="primary">点击上传文件</el-button>
+            <div class="button-container" style="display: flex;">
+              <el-upload
+                  class="upload-demo"
+                  multiple
+                  :http-request="handleUpload"
+                  :before-remove="handleUploadRemove"
+                  :on-success="handleUploadSuccess"
+                  :before-upload="handleBeforeUpload"
+              >
+                <el-button type="primary">点击上传文件</el-button>
+              </el-upload>
               <el-button type="primary" @click="genVerifyCode" v-if="userAuth == Auth.ADMIN">获取邀请码</el-button>
               <el-button type="primary" @click="logout">退出登录</el-button>
-              <template #tip>
-                <div class="el-upload__tip">
-                  最大文件限制大小:20GB
-                </div>
-              </template>
-            </el-upload>
-
+            </div>
           </div>
         </div>
       </van-popup>
@@ -261,16 +257,25 @@ const downloadFile = (id: number) => {
 }
 const removeFile = (id: number) => {
   if (userAuth.value != Auth.ADMIN) {
-    ElMessage.error("呜~你是怎么发现这个按钮的，可惜哦~不能用哦~")
+    ElMessage.error({
+      message: '呜~你是怎么发现这个按钮的，可惜哦~不能用哦~',
+      grouping: true,
+    })
     return;
   }
   remove(id).then((res: AxiosResponse<Result<boolean>>) => {
     if (res.data.data) {
-      ElMessage.success("删除成功！");
+      ElMessage.success({
+        message: '删除成功！',
+        grouping: true,
+      });
       showAllFiles()
       return;
     }
-    ElMessage.error("删除失败，请查看后台日志处理！");
+    ElMessage.error({
+      message: '删除失败，请查看后台日志处理！',
+      grouping: true,
+    });
   });
 }
 // 主题切换
@@ -315,7 +320,10 @@ const showAllFiles = () => {
       totalFileCount.value = res.data.data.total;
       pageFileData.value = res.data.data.data;
     }).catch(() => {
-      ElMessage.error("搜索失败！");
+      ElMessage.error({
+        message: '搜索失败！',
+        grouping: true,
+      });
     })
     return;
   }
@@ -345,9 +353,15 @@ const shortHash = (hash: string): string => {
 const copyFullHash = () => {
   if (nowSelectedFileInformation.value) {
     navigator.clipboard.writeText(nowSelectedFileInformation.value.hash);
-    ElMessage.success("复制成功！");
+    ElMessage.success({
+      message: '复制成功！',
+      grouping: true,
+    });
   } else {
-    ElMessage.error("你是怎么点到这个按钮的？？？");
+    ElMessage.error({
+      message: '你是怎么点到这个按钮的？？？',
+      grouping: true,
+    });
   }
 
 }
@@ -377,7 +391,10 @@ const userLogin = () => {
   sessionStorage.clear();
   // 用户登录函数
   if (usernameInput.value == "" || userPasswordInput.value == "") {
-    ElMessage.error("用户名密码不能为空");
+    ElMessage.error({
+      message: '用户名密码不能为空',
+      grouping: true,
+    });
     return;
   }
   // 调用登录接口
@@ -392,17 +409,26 @@ const userLogin = () => {
           setTimeout(() => {
             imgLoginBox();
           }, 1000); // 1000毫秒（1秒）延迟示例
-          ElMessage.success("登录成功!");
+          ElMessage.success({
+            message: '登录成功!',
+            grouping: true,
+          });
           window.location.reload()
         } else {
-          ElMessage.error("登录失败,用户名密码错误!");
+          ElMessage.error({
+            message: '登录失败,用户名密码错误!',
+            grouping: true,
+          });
         }
       })
 };
 // 注销登陆
 const logout = () => {
   // 提醒弹窗
-  ElMessage.success("退出成功!")
+  ElMessage.success({
+    message: '退出成功!',
+    grouping: true,
+  })
   // 清除本地存储中的用户信息
   sessionStorage.clear();
   userAvatarLoginShowTools.value = false;
@@ -412,28 +438,43 @@ const logout = () => {
 const userEnroll = () => {
   // 用户注册函数
   if (usernameInput.value == '' || userPasswordInput.value == '') {
-    ElMessage.error("用户名密码不能为空")
+    ElMessage.error({
+      message: '用户名密码不能为空',
+      grouping: true,
+    })
     return;
   }
   register(usernameInput.value, userPasswordInput.value, registerTypeInput.value, verifyCodeInput.value).then((res) => {
     switch (res.data.status) {
       case 251:
-        ElMessage.error("邀请码错误！");
+        ElMessage.error({
+          message: '邀请码错误！',
+          grouping: true,
+        });
         break;
       case 501:
-        ElMessage.error("存在同名用户！");
+        ElMessage.error({
+          message: '存在同名用户！',
+          grouping: true,
+        });
         break;
       case 200:
+        ElMessage.success({
+          message: '注册成功',
+          grouping: true,
+        });
         sessionStorage.setItem("username", res.data.data.name);
         sessionStorage.setItem("auth", res.data.data.auth.toString());
         setTimeout(() => {
           imgLoginBox();
         }, 1000);
-        ElMessage.success("注册成功");
         window.location.reload()
         break;
       default:
-        ElMessage.error("无法注册！");
+        ElMessage.error({
+          message: '无法注册！',
+          grouping: true,
+        });
     }
   });
 }
@@ -442,7 +483,10 @@ const userEnroll = () => {
  */
 const genVerifyCode = () => {
   if (userAuth.value != Auth.ADMIN) {
-    ElMessage.error("呜~你是怎么发现这个按钮的，可惜哦~不能用哦~")
+    ElMessage.error({
+      message: '呜~你是怎么发现这个按钮的，可惜哦~不能用哦~',
+      grouping: true,
+    })
     return;
   }
   generatorVerifyCode().then((res: AxiosResponse<Result<string>>) => {
@@ -465,7 +509,10 @@ const handleUploadRemove = (uploadFile: UploadFile): Awaitable<boolean> => {
   const controller = abortControllers.value.get(name);
   if (controller) {
     controller.abort("user");
-    ElMessage.success("成功取消！")
+    ElMessage.success({
+      message: '成功取消！',
+      grouping: true,
+    })
     return true;
   }
   return false;
@@ -485,7 +532,10 @@ const handleUploadSuccess = (_: never, uploadFile: UploadFile): void => {
 const handleBeforeUpload = (rawFile: UploadRawFile): Promise<unknown> => {
   return new Promise((resolve, reject) => {
     if (!isLogin.value) {
-      ElMessage.error("未登录，无法上传！");
+      ElMessage.error({
+        message: '未登录，无法上传！',
+        grouping: true,
+      });
       reject();
     }
     if (abortControllers.value.has(rawFile.name)) {
@@ -585,10 +635,6 @@ onMounted(() => {
   margin-top: 20px; /* 按钮区域样式 */
 }
 
-.userLoginButton {
-  width: 120px; /* 登录注册按钮样式 */
-}
-
 .fileLiteBox {
   margin-top: 10px;
 }
@@ -608,5 +654,11 @@ onMounted(() => {
 
 .file-information-popover {
   margin: 20px;
+}
+
+.button-container {
+  display: flex;
+  justify-content: space-between; /* 或其他值如 center, space-around 等 */
+  gap: 10px;
 }
 </style>
